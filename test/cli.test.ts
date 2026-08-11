@@ -1,7 +1,14 @@
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  linkSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -117,6 +124,22 @@ describe("iritoken CLI (built)", () => {
     assert.ok(Array.isArray(value.stats.decisions));
   });
 
+  it("reports UTF-8 bytes separately from character counts", () => {
+    const file = join(dir, "unicode.log");
+    writeFileSync(file, "😀\n");
+    const report = runCli([file]);
+    assert.equal(report.status, 0);
+    assert.match(report.stdout, /5 B\s+3 chars/);
+
+    const json = runCli([file, "--json"]);
+    const value = JSON.parse(json.stdout) as {
+      bytes: { original: number };
+      stats: { originalCharacters: number };
+    };
+    assert.equal(value.bytes.original, 5);
+    assert.equal(value.stats.originalCharacters, 3);
+  });
+
   it("--quiet suppresses reports written alongside an output file", () => {
     const file = join(dir, "quiet-in.log");
     const out = join(dir, "quiet-out.log");
@@ -139,12 +162,36 @@ describe("iritoken CLI (built)", () => {
     assert.ok(r.stderr.includes("input is too large"));
   });
 
+  it("rejects a file above the configured size limit", () => {
+    const file = join(dir, "oversized.log");
+    writeFileSync(file, "x".repeat(128 * 1024));
+    const r = runCli([file, "--max-input-mb", "0.0625"]);
+    assert.equal(r.status, 1);
+    assert.ok(r.stderr.includes("input is too large"));
+  });
+
   it("refuses to overwrite the input file", () => {
     const file = join(dir, "same.log");
     writeFileSync(file, "original\n");
     const r = runCli([file, "--output", file]);
     assert.equal(r.status, 1);
     assert.equal(readFileSync(file, "utf8"), "original\n");
+  });
+
+  it("refuses an output hard link to the input file", () => {
+    const file = join(dir, "hardlink-input.log");
+    const link = join(dir, "hardlink-output.log");
+    writeFileSync(file, "\x1b[31moriginal\x1b[0m\n");
+    linkSync(file, link);
+    const r = runCli([file, "--output", link]);
+    assert.equal(r.status, 1);
+    assert.equal(readFileSync(file, "utf8"), "\x1b[31moriginal\x1b[0m\n");
+  });
+
+  it("rejects a non-regular input path", () => {
+    const r = runCli([dir]);
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /regular file/);
   });
 
   it("refuses an output symlink", async () => {

@@ -23,14 +23,16 @@ objects, returns copies, and leaves system/assistant content alone by default.
 ```ts
 import { optimizeMessages } from "iritoken";
 
-const { messages, stats } = optimizeMessages(request.messages, {
+const { messages, stats, messageStats, totalStats } = optimizeMessages(request.messages, {
   preset: "balanced",
   roles: ["tool"]
 });
 ```
 
 This helper deliberately does not send the messages. Pass its output to the
-provider SDK of your choice.
+provider SDK of your choice. `stats` remains the legacy ordered stats array;
+`messageStats` adds the source index and role, while `totalStats` aggregates
+characters removed and cleaner counts across all optimized messages.
 
 ## Node streams
 
@@ -59,9 +61,10 @@ source.pipe(createTerminalOptimizeTransform({ maxLineBytes: 1024 * 1024 })).pipe
 The terminal variant applies ANSI, whitespace, and consecutive duplicate-line
 cleanup. It does not run global detection or balanced/aggressive cleaners.
 
-The transform is backpressure-aware but bounded-buffered: it waits for all
-input so detection and output match `optimize()` exactly. `maxInputBytes`
-prevents unbounded memory use.
+Both transforms are backpressure-aware. The generic transform waits for all
+bounded input so detection and output match `optimize()` exactly; the terminal
+variant keeps only the current line and duplicate run. `maxInputBytes` and
+`maxLineBytes` enforce their respective bounds.
 
 ## Exact tokenizer statistics
 

@@ -1,0 +1,12 @@
+#21 [compiler 6/9] COPY packages ./packages
+#21 [compiler 6/9] COPY packages ./packages
+#21 [compiler 6/9] COPY packages ./packages
+#22 [compiler 7/9] RUN npm run compile:cobalt
+#22 1.441 src/cobalt/router.ts(88,27): error TS6196: 'RouteCipher' is declared but never used.
+#22 ERROR: process "/bin/sh -c npm run compile:cobalt" did not complete successfully: exit code: 17
+Containerfile:31
+--------------------
+  29 | COPY packages ./packages
+  30 |
+  31 | >>> RUN npm run compile:cobalt
+--------------------

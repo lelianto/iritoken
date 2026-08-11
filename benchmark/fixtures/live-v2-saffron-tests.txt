@@ -1,0 +1,13 @@
+RUN  v3.8.7 /workspace/saffron
+ ✓ src/lease/read.test.ts > reads active lease
+ ✓ src/lease/write.test.ts > writes renewed lease
+ ✓ src/lease/expire.test.ts > expires stale lease
+ ✗ src/lease/rotate.test.ts > rotates saffron lease
+
+AssertionError: expected tokens to match
+Expected: "lease_9ZP"
+Received: "lease_2HD"
+ ❯ src/lease/rotate.test.ts:64:18
+
+Test Files  1 failed | 3 passed (4)
+Tests       1 failed | 3 passed (4)

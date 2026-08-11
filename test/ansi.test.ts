@@ -30,13 +30,27 @@ describe("AnsiCleaner", () => {
     assert.deepEqual(r.changes, []);
   });
 
-  it("handles malformed/partial escape sequences conservatively", () => {
+  it("removes malformed and partial escape sequences", () => {
     const part = "\x1b[31m";
     assert.equal(cleaner.clean(part, TERMINAL).text, ""); // CSI with no final byte terminates anyway in strips
-    // incomplete CSI that cannot finish should be left alone per grammar
     const incomplete = "a\x1b[2";
     const base = cleaner.clean(incomplete, TERMINAL);
-    assert.equal(base.text, "a\x1b[2");
+    assert.equal(base.text, "a");
+  });
+
+  it("removes terminal control-string families", () => {
+    assert.equal(cleaner.clean("a\x1bPpayload\x1b\\b", TERMINAL).text, "ab");
+    assert.equal(cleaner.clean("a\x1bXpayload\x1b\\b", TERMINAL).text, "ab");
+    assert.equal(cleaner.clean("a\x1b^payload\x1b\\b", TERMINAL).text, "ab");
+    assert.equal(cleaner.clean("a\x1b_payload\x1b\\b", TERMINAL).text, "ab");
+    assert.equal(cleaner.clean("a\x1b(Bb", TERMINAL).text, "ab");
+    assert.equal(cleaner.clean("a\x1bcb", TERMINAL).text, "ab");
+  });
+
+  it("removes OSC clipboard and C1 control sequences", () => {
+    assert.equal(cleaner.clean("a\x1b]52;c;payload\x07b", TERMINAL).text, "ab");
+    assert.equal(cleaner.clean("a\u009b31mb", TERMINAL).text, "ab");
+    assert.equal(cleaner.clean("a\u009dtitle\x07b", TERMINAL).text, "ab");
   });
 
   it("is idempotent", () => {

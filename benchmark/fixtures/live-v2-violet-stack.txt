@@ -1,0 +1,8 @@
+LedgerWindowError: tenant=violet-39 window checksum mismatch upstream=req_7KM92P
+    at verifyWindow (src/ledger/window.ts:217:13)
+    at verifyWindow (src/ledger/window.ts:217:13)
+    at verifyWindow (src/ledger/window.ts:217:13)
+    at hydrateLedger (src/ledger/hydrate.ts:91:7)
+    at dispatchRequest (src/gateway/dispatch.ts:44:11)
+    at async handleTenant (src/api/tenant.ts:128:5)
+Caused by: upstream request req_7KM92P returned checksum 0x7a91

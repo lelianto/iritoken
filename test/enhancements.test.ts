@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { Readable } from "node:stream";
+import { Readable, Writable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import {
   fromEncoder,
   fromTokenizer,
@@ -27,6 +28,11 @@ describe("message integration", () => {
     assert.equal(result.messages[1]?.content, "ERROR");
     assert.equal(input[1]?.content, "\x1b[31mERROR\x1b[0m");
     assert.equal(result.stats.length, 1);
+    assert.equal(result.messageStats[0]?.index, 1);
+    assert.equal(result.messageStats[0]?.role, "tool");
+    assert.equal(result.totalStats.originalCharacters, input[1]?.content.length);
+    assert.equal(result.totalStats.optimizedCharacters, "ERROR".length);
+    assert.deepEqual(result.totalStats.transformations, { ansi: 2 });
   });
 });
 
@@ -48,6 +54,12 @@ describe("observability", () => {
 });
 
 describe("stream integration", () => {
+  const freshTerminalInput =
+    "\x1b]0;nebula-run\x07\x1b[36mnebula shard online 😀\x1b[0m  \r\n" +
+    "nebula shard online 😀\r\nnebula shard online 😀\r\nnebula shard online 😀\r\n\r\n\r\ncheckpoint zeta-91\r\n";
+  const freshTerminalExpected =
+    "nebula shard online 😀 [repeated 4 times]\r\n\r\ncheckpoint zeta-91\r\n";
+
   it("matches optimize across split UTF-8 chunks", async () => {
     const input = "\x1b[31mERROR 😀\x1b[0m\n";
     const bytes = Buffer.from(input);
@@ -87,6 +99,43 @@ describe("stream integration", () => {
     await assert.rejects(async () => {
       for await (const chunk of stream) void chunk;
     }, /input is too large/);
+  });
+
+  it("is invariant across randomized byte chunk boundaries", async () => {
+    const bytes = Buffer.from(freshTerminalInput);
+    for (let seed = 1; seed <= 64; seed += 1) {
+      let state = seed;
+      const chunks: Buffer[] = [];
+      for (let offset = 0; offset < bytes.length;) {
+        state = (state * 1664525 + 1013904223) >>> 0;
+        const width = 1 + (state % 11);
+        chunks.push(bytes.subarray(offset, Math.min(bytes.length, offset + width)));
+        offset += width;
+      }
+      const output: Buffer[] = [];
+      for await (const chunk of Readable.from(chunks).pipe(createTerminalOptimizeTransform())) {
+        output.push(chunk as Buffer);
+      }
+      assert.equal(Buffer.concat(output).toString("utf8"), freshTerminalExpected, `seed ${seed}`);
+    }
+  });
+
+  it("honors downstream backpressure without losing data", async () => {
+    const repeated = freshTerminalInput.repeat(200);
+    const output: Buffer[] = [];
+    const slowSink = new Writable({
+      highWaterMark: 1,
+      write(chunk: Buffer, _encoding, callback) {
+        output.push(Buffer.from(chunk));
+        setImmediate(callback);
+      },
+    });
+    await pipeline(
+      Readable.from(Array.from(Buffer.from(repeated), (byte) => Buffer.from([byte]))),
+      createTerminalOptimizeTransform(),
+      slowSink,
+    );
+    assert.equal(Buffer.concat(output).toString("utf8"), freshTerminalExpected.repeat(200));
   });
 });
 

@@ -1,4 +1,6 @@
 import { execFileSync } from "node:child_process";
+import { writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { optimize } from "../src/pipeline/optimize.js";
 import type { PresetName } from "../src/types.js";
@@ -110,7 +112,18 @@ if (process.argv[2] === "--worker") {
     );
   }
   const worst = results.at(-1);
-  if (worst && (worst.ms > 10_000 || worst.peakRssMiB > 350)) {
+  const passed = !worst || (worst.ms <= 10_000 && worst.peakRssMiB <= 350);
+  writeFileSync(join(dirname(fileURLToPath(import.meta.url)), "results", "performance.json"), `${JSON.stringify({
+    schemaVersion: 1,
+    methodologyVersion: "isolated-median-v1",
+    generatedAt: new Date().toISOString(),
+    runtime: { node: process.version, platform: process.platform, arch: process.arch },
+    preset,
+    results,
+    budget: { inputBytes: 10 * 1024 * 1024, maxMilliseconds: 10_000, maxPeakRssMiB: 350 },
+    passed,
+  }, null, 2)}\n`);
+  if (!passed) {
     process.stderr.write("Performance budget exceeded: 10 MiB must stay below 10 s and 350 MiB peak RSS.\n");
     process.exitCode = 1;
   }

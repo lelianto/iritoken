@@ -15,7 +15,7 @@ try {
   assert.equal(typeof filename, "string", "npm pack did not return a tarball name");
   const tarball = join(root, filename);
   const contents = packed[0].files.map((entry) => entry.path);
-  for (const required of ["dist/index.js", "dist/index.d.ts", "dist/security.js", "dist/stream.js", "dist/integrations/messages.js", "docs/quality-benchmark.md", "docs/integrations.md", "assets/logo.svg", "LICENSE", "README.md", "SECURITY.md"]) {
+  for (const required of ["dist/index.js", "dist/index.d.ts", "dist/security.js", "dist/stream.js", "dist/integrations/messages.js", "docs/quality-benchmark.md", "docs/integrations.md", "assets/logo.svg", "CHANGELOG.md", "LICENSE", "README.md", "SECURITY.md"]) {
     assert.ok(contents.includes(required), `tarball is missing ${required}`);
   }
   assert.ok(!contents.some((path) => /^(src|test|benchmark)\//.test(path)));
@@ -27,7 +27,7 @@ try {
 
   const bin = join(temp, "node_modules", ".bin", "iritoken");
   assert.ok(existsSync(bin));
-  assert.match(execFileSync(bin, ["--version"], { cwd: temp, encoding: "utf8" }), /^iritoken 0\.1\.0/);
+  assert.match(execFileSync(bin, ["--version"], { cwd: temp, encoding: "utf8" }), /^iritoken 0\.2\.0/);
   const installed = JSON.parse(readFileSync(join(temp, "node_modules", "iritoken", "package.json"), "utf8"));
   assert.equal(installed.dependencies, undefined, "published package gained runtime dependencies");
   process.stdout.write(`Pack smoke test passed: ${filename}\n`);

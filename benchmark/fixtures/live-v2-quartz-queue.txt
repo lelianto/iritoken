@@ -1,0 +1,13 @@
+[03:17:41] connecting endpoint=grpc://quartz-17.internal:7443 shard=ember-6
+[03:17:41] connecting endpoint=grpc://quartz-17.internal:7443 shard=ember-6
+[03:17:41] connecting endpoint=grpc://quartz-17.internal:7443 shard=ember-6
+[03:17:42] batch accepted batch=Q2M-8841 items=96
+[03:17:42] polling acknowledgement window
+[03:17:42] polling acknowledgement window
+[03:17:42] polling acknowledgement window
+[03:17:42] polling acknowledgement window
+[03:17:44] warning: acknowledgement delayed batch=Q2M-8841
+[03:17:45] retrying batch=Q2M-8841 attempt=1
+[03:17:46] retrying batch=Q2M-8841 attempt=2
+[03:17:48] fatal code=QZ-7419 message="lease epoch rejected"
+[03:17:48] status: shard=ember-6 disconnected

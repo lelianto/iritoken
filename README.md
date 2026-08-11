@@ -13,8 +13,8 @@
   <p>
     <a href="https://www.npmjs.com/package/iritoken"><img src="https://img.shields.io/npm/v/iritoken?style=flat-square&color=2563eb" alt="npm version" /></a>
     <a href="https://github.com/lelianto/iritoken/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/lelianto/iritoken/ci.yml?branch=main&style=flat-square&label=CI" alt="CI status" /></a>
-    <a href="https://badge.socket.dev/npm/package/iritoken/0.1.0"><img src="https://badge.socket.dev/npm/package/iritoken/0.1.0" alt="Socket security score" /></a>
-    <a href="https://bundlephobia.com/package/iritoken@0.1.0"><img src="https://img.shields.io/bundlephobia/minzip/iritoken@0.1.0?style=flat-square" alt="minified and gzipped bundle size" /></a>
+    <a href="https://badge.socket.dev/npm/package/iritoken/0.2.0"><img src="https://badge.socket.dev/npm/package/iritoken/0.2.0" alt="Socket security score" /></a>
+    <a href="https://bundlephobia.com/package/iritoken@0.2.0"><img src="https://img.shields.io/bundlephobia/minzip/iritoken@0.2.0?style=flat-square" alt="minified and gzipped bundle size" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-7c3aed?style=flat-square" alt="Apache 2.0 license" /></a>
     <a href="https://www.npmjs.com/package/iritoken"><img src="https://img.shields.io/npm/dm/iritoken?style=flat-square&color=0f766e" alt="npm downloads" /></a>
     <img src="https://img.shields.io/badge/dependencies-0-16a34a?style=flat-square" alt="zero runtime dependencies" />
@@ -386,23 +386,23 @@ repetitive logs, mixed agent context, Docker, Kubernetes, and Python failures.
 ### Live-model quality result
 
 The latest quality-first run used `deepseek-v4-flash`, thinking disabled, five
-trials, and 70 requests on the original seven-task suite:
+trials, and 60 requests on a newly authored six-task suite:
 
 | Metric | Original | Optimized |
 | --- | ---: | ---: |
-| API-reported input tokens | 22,840 | 19,695 |
-| Fact recall | 83.2% | 85.2% |
-| Complete tasks | 16/35 | 19/35 |
+| API-reported input tokens | 7,170 | 6,185 |
+| Fact recall | 88.0% | 88.0% |
+| Complete tasks | 15/30 | 15/30 |
 
-- Actual API token reduction: **13.77%**
-- Paired mean quality change: **+2.14 percentage points**
-- Task-cluster bootstrap 95% CI: **0.00 to +6.43 percentage points**
+- Actual API token reduction: **13.74%**
+- Paired mean quality change: **0.00 percentage points**
+- Task-cluster bootstrap 95% CI: **0.00 to 0.00 percentage points**
 - Pre-registered −5pp non-inferiority margin: **passed**
-- Recorded cost: approximately **$0.007438**
+- Recorded cost: approximately **$0.002690**
 
 This result supports non-inferiority for that model, configuration, and task
-suite—not every model or workload. The three newer fixtures have deterministic
-coverage and should be included in the next live-model campaign.
+suite—not every model or workload. The corpus ID and SHA-256 fingerprint are
+recorded with the report so the result can be traced to exact fresh inputs.
 
 ### Performance
 

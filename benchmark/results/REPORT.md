@@ -12,6 +12,12 @@ Generated automatically by `npm run benchmark`. Do not edit by hand.
 | docker-build | 652 | 581 | 10.9% | 133 | 119 | 10.5% |
 | jest-output | 1,166 | 1,166 | 0.0% | 232 | 232 | 0.0% |
 | kubernetes-events | 985 | 985 | 0.0% | 166 | 166 | 0.0% |
+| live-v2-cobalt-build | 509 | 440 | 13.6% | 98 | 85 | 13.3% |
+| live-v2-indigo-deploy | 477 | 352 | 26.2% | 83 | 63 | 24.1% |
+| live-v2-opal-compiler | 368 | 368 | 0.0% | 67 | 67 | 0.0% |
+| live-v2-quartz-queue | 702 | 462 | 34.2% | 116 | 79 | 31.9% |
+| live-v2-saffron-tests | 423 | 423 | 0.0% | 79 | 79 | 0.0% |
+| live-v2-violet-stack | 452 | 371 | 17.9% | 73 | 61 | 16.4% |
 | mixed-agent-context | 1,156 | 1,156 | 0.0% | 221 | 221 | 0.0% |
 | npm-install | 1,990 | 1,787 | 10.2% | 402 | 362 | 10.0% |
 | python-traceback | 544 | 544 | 0.0% | 97 | 97 | 0.0% |
@@ -23,7 +29,7 @@ Generated automatically by `npm run benchmark`. Do not edit by hand.
 | tsc-errors | 1,982 | 1,982 | 0.0% | 355 | 355 | 0.0% |
 | vitest-output | 1,685 | 1,685 | 0.0% | 298 | 298 | 0.0% |
 
-**Total for preset: balanced — 11.7% characters**
+**Total for preset: balanced — 12.7% characters**
 
 ## preset: safe
 
@@ -32,6 +38,12 @@ Generated automatically by `npm run benchmark`. Do not edit by hand.
 | docker-build | 652 | 581 | 10.9% | 133 | 119 | 10.5% |
 | jest-output | 1,166 | 1,166 | 0.0% | 232 | 232 | 0.0% |
 | kubernetes-events | 985 | 985 | 0.0% | 166 | 166 | 0.0% |
+| live-v2-cobalt-build | 509 | 440 | 13.6% | 98 | 85 | 13.3% |
+| live-v2-indigo-deploy | 477 | 352 | 26.2% | 83 | 63 | 24.1% |
+| live-v2-opal-compiler | 368 | 368 | 0.0% | 67 | 67 | 0.0% |
+| live-v2-quartz-queue | 702 | 462 | 34.2% | 116 | 79 | 31.9% |
+| live-v2-saffron-tests | 423 | 423 | 0.0% | 79 | 79 | 0.0% |
+| live-v2-violet-stack | 452 | 452 | 0.0% | 73 | 73 | 0.0% |
 | mixed-agent-context | 1,156 | 1,156 | 0.0% | 221 | 221 | 0.0% |
 | npm-install | 1,990 | 1,787 | 10.2% | 402 | 362 | 10.0% |
 | python-traceback | 544 | 544 | 0.0% | 97 | 97 | 0.0% |
@@ -43,14 +55,14 @@ Generated automatically by `npm run benchmark`. Do not edit by hand.
 | tsc-errors | 1,982 | 1,982 | 0.0% | 355 | 355 | 0.0% |
 | vitest-output | 1,685 | 1,685 | 0.0% | 298 | 298 | 0.0% |
 
-**Total for preset: safe — 5.4% characters**
+**Total for preset: safe — 6.9% characters**
 
 
 ## Combined
 
-Total input characters: 30,372
-Total optimized characters: 27,766
-Overall reduction: 8.6%
+Total input characters: 36,234
+Total optimized characters: 32,679
+Overall reduction: 9.8%
 
 
 ## By workload
@@ -79,6 +91,8 @@ Overall reduction: 8.6%
 | tabular-output | safe | 985 | 985 | 0.0% |
 | test-output | balanced | 2,851 | 2,851 | 0.0% |
 | test-output | safe | 2,851 | 2,851 | 0.0% |
+| unclassified | balanced | 2,931 | 2,416 | 17.6% |
+| unclassified | safe | 2,931 | 2,497 | 14.8% |
 ## Methodology
 
 - Every fixture is a deterministic file in `benchmark/fixtures/`.

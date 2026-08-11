@@ -14,38 +14,29 @@ Measured on 2026-08-11 with the official DeepSeek API:
 | Thinking mode | Disabled |
 | Preset | `balanced` |
 | Trials | 5 per task and variant |
-| Tasks | 7 |
-| Requests | 70 |
+| Corpus | `live-v2-2026-08-11-quartz` |
+| Corpus SHA-256 | `2e411b8032845ac7b3c3d618834a90686bb087de703c31591c839ad4502a49c5` |
+| Tasks | 6 (newly authored) |
+| Requests | 60 |
 | Maximum response | 256 tokens |
-| Original input tokens | 22,840 |
-| Optimized input tokens | 19,695 |
-| API-reported reduction | **13.77%** |
-| Original fact recall | 83.2% |
-| Optimized fact recall | 85.2% |
-| Paired mean difference | **+2.14pp** |
-| Task-cluster bootstrap 95% CI | **0.00pp to +6.43pp** |
+| Original input tokens | 7,170 |
+| Optimized input tokens | 6,185 |
+| API-reported reduction | **13.74%** |
+| Original fact recall | 88.0% |
+| Optimized fact recall | 88.0% |
+| Paired mean difference | **0.00pp** |
+| Task-cluster bootstrap 95% CI | **0.00pp to 0.00pp** |
 | Non-inferiority margin | -5pp |
 | Non-inferiority result | **PASS** |
-| Approximate API cost | $0.007438 |
+| Approximate API cost | $0.002690 |
 
 The result supports non-inferiority only for this model, fixture set, prompt,
 and rubric. It is not a universal guarantee for every model or workload.
 
-## Per-task result
-
-| Task | Original recall | Optimized recall | Complete tasks (original → optimized) |
-| --- | ---: | ---: | ---: |
-| npm error diagnosis | 100.0% | 100.0% | 5/5 → 5/5 |
-| Jest failure analysis | 90.0% | 90.0% | 4/5 → 4/5 |
-| TypeScript fix list | 85.7% | 85.7% | 0/5 → 0/5 |
-| Agent context | 45.0% | 45.0% | 0/5 → 0/5 |
-| Log forensics | 85.0% | 100.0% | 2/5 → 5/5 |
-| Stack understanding | 100.0% | 100.0% | 5/5 → 5/5 |
-| Vitest failure analysis | 75.0% | 75.0% | 0/5 → 0/5 |
-
-Low absolute scores for some tasks affect both variants and reflect model and
-rubric difficulty. The paired comparison is the relevant measure of iritoken's
-effect.
+All task prompts, fixture facts, identifiers, and contexts in this campaign
+were newly authored for this run. No previous live task or prompt text was sent
+to the provider. The paired comparison is the relevant measure of iritoken's
+effect; complete-task success was 15/30 for both variants.
 
 ## Methodology
 
@@ -92,8 +83,9 @@ npm run benchmark:deepseek -- --trials 5 --max-cost-usd 0.02
 ```
 
 Raw secret-free measurements are written to
-`benchmark/results/deepseek-live.json` (ignored by Git), and the concise report
-is written to `benchmark/results/DEEPSEEK.md`.
+`benchmark/results/deepseek-live-v2.json` (ignored by Git), and the concise
+report is written to `benchmark/results/DEEPSEEK-V2.md`. Interrupted runs can be
+continued with `--resume`; corpus fingerprint and model must match.
 
 Before publishing a result, also run:
 
@@ -105,6 +97,7 @@ npm run benchmark:verify
 npm run pack:smoke
 ```
 
-The quality-first implementation passed all 107 tests at the time of the live
-run. The current enhanced package passes 117 tests, lint, strict typechecking,
-deterministic benchmarks, and packed-artifact smoke testing.
+The exact test count and deterministic gate results are recorded by CI rather
+than frozen in this document. Benchmark commands also emit versioned JSON under
+`benchmark/results/` for machine audit; raw JSON is intentionally ignored by
+Git because it includes environment-specific measurements.

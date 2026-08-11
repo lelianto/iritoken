@@ -1,0 +1,9 @@
+[36m[19:04:11] deploy=IND-5528 region=ap-south-2 preparing artifact[0m
+[90m[19:04:12] upload chunk complete[0m
+[90m[19:04:12] upload chunk complete[0m
+[90m[19:04:12] upload chunk complete[0m
+[90m[19:04:12] upload chunk complete[0m
+[19:04:14] artifact digest sha256:91ac77e5b4
+[19:04:16] warning: readiness probe failed probe code PX-308
+[19:04:17] rollback deploy=IND-5528 reason="probe code PX-308"
+[19:04:19] status: previous revision restored in region=ap-south-2

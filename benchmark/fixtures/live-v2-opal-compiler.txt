@@ -1,0 +1,9 @@
+opal compile --project opal.workspace
+
+src/opal/cache.op:18:9 OP204 incompatible cache key width
+src/opal/cache.op:27:11 OP204 incompatible cache key width
+src/opal/cache.op:39:5 OP204 incompatible cache key width
+src/opal/codec.op:72:14 OP771 decoder branch is not exhaustive
+src/opal/codec.op:91:14 OP771 decoder branch is not exhaustive
+
+Found 5 errors in 2 files.

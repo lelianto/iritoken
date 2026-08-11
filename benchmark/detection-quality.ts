@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { classify } from "../src/detectors/content-type.js";
@@ -45,5 +45,16 @@ const specificity = negativeCount === 0 ? 0 : trueNegative / negativeCount;
 process.stdout.write(
   `Terminal eligibility: recall=${(recall * 100).toFixed(1)}% specificity=${(specificity * 100).toFixed(1)}% TP=${truePositive} TN=${trueNegative} FP=${falsePositive} FN=${falseNegative}\n`,
 );
+writeFileSync(join(here, "results", "detection-quality.json"), `${JSON.stringify({
+  schemaVersion: 1,
+  methodologyVersion: "labelled-terminal-eligibility-v1",
+  generatedAt: new Date().toISOString(),
+  runtime: { node: process.version, platform: process.platform, arch: process.arch },
+  corpusSize: labelled.length,
+  confusionMatrix: { truePositive, trueNegative, falsePositive, falseNegative },
+  metrics: { recall, specificity },
+  budget: { maxFalsePositive: 0, maxFalseNegative: 0 },
+  passed: falsePositive === 0 && falseNegative === 0,
+}, null, 2)}\n`);
 
 if (falsePositive > 0 || falseNegative > 0) process.exitCode = 1;

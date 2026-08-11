@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { optimize } from "../src/pipeline/optimize.js";
-import { TASKS } from "./tasks/manifest.js";
+import { LIVE_V2_CORPUS_ID, LIVE_V2_TASKS } from "./tasks/live-v2-manifest.js";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
 const PROJECT_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -62,6 +62,10 @@ function loadLocalEnv(): void {
 function argument(name: string): string | undefined {
   const index = process.argv.indexOf(name);
   return index >= 0 ? process.argv[index + 1] : undefined;
+}
+
+function hasFlag(name: string): boolean {
+  return process.argv.includes(name);
 }
 
 function normalize(value: string): string {
@@ -128,7 +132,9 @@ if (!Number.isSafeInteger(trials) || trials < 1 || trials > 10) throw new Error(
 const maxCostUsd = Number(argument("--max-cost-usd") ?? "0.03");
 if (!Number.isFinite(maxCostUsd) || maxCostUsd <= 0 || maxCostUsd > 1) throw new Error("--max-cost-usd must be greater than 0 and at most 1");
 const taskFilter = argument("--task");
-const selectedTasks = taskFilter ? TASKS.filter((task) => task.name === taskFilter) : TASKS;
+const selectedTasks = taskFilter
+  ? LIVE_V2_TASKS.filter((task) => task.name === taskFilter)
+  : LIVE_V2_TASKS;
 if (selectedTasks.length === 0) throw new Error(`Unknown --task: ${taskFilter}`);
 await validateModel(apiKey);
 
@@ -139,12 +145,40 @@ for (let trial = 1; trial <= trials; trial += 1) {
   }
 }
 const orderedJobs = seededOrder(jobs, 0xdee5_ee4 + trials);
-const runs: Run[] = [];
 const resultsDir = join(ROOT, "results");
 const resultSuffix = taskFilter ? `-${taskFilter.replace(/[^a-z0-9-]/gi, "-")}` : "";
+const resultStem = `deepseek-live-v2${resultSuffix}`;
 mkdirSync(resultsDir, { recursive: true });
+const corpusSha256 = createHash("sha256");
+for (const task of selectedTasks) {
+  corpusSha256.update(task.name).update("\0").update(task.description).update("\0");
+  corpusSha256.update(readFileSync(join(ROOT, "fixtures", task.fixture), "utf8")).update("\0");
+}
+const corpusFingerprint = corpusSha256.digest("hex");
+const partialPath = join(resultsDir, `${resultStem}.partial.json`);
+let runs: Run[] = [];
+if (hasFlag("--resume")) {
+  const partial = JSON.parse(readFileSync(partialPath, "utf8")) as {
+    corpusId: string;
+    corpusFingerprint: string;
+    model: string;
+    trials: number;
+    runs: Run[];
+  };
+  if (
+    partial.corpusId !== LIVE_V2_CORPUS_ID ||
+    partial.corpusFingerprint !== corpusFingerprint ||
+    partial.model !== MODEL ||
+    partial.trials !== trials
+  ) {
+    throw new Error("Partial run metadata does not match the requested benchmark");
+  }
+  runs = partial.runs;
+  process.stdout.write(`Resuming ${runs.length}/${orderedJobs.length} completed requests\n`);
+}
 
 for (const job of orderedJobs) {
+  if (runs.some((run) => run.trial === job.trial && run.task === job.task.name && run.variant === job.variant)) continue;
   const original = readFileSync(join(ROOT, "fixtures", job.task.fixture), "utf8");
   const context = job.variant === "original" ? original : optimize(original, { preset: "balanced" }).text;
   const result = await completion(apiKey, job.task.description, context);
@@ -173,8 +207,11 @@ for (const job of orderedJobs) {
     0,
   );
   if (spendSoFar > maxCostUsd) throw new Error(`Cost cap exceeded: $${spendSoFar.toFixed(6)} > $${maxCostUsd.toFixed(6)}`);
-  writeFileSync(join(resultsDir, `deepseek-live${resultSuffix}.partial.json`), JSON.stringify({ model: MODEL, trials, runs }, null, 2), "utf8");
+  writeFileSync(partialPath, JSON.stringify({ corpusId: LIVE_V2_CORPUS_ID, corpusFingerprint, model: MODEL, trials, runs }, null, 2), "utf8");
   process.stdout.write(`${job.task.name} ${job.variant}: ${result.usage.prompt_tokens} input, ${factsFound}/${job.task.verification.mustContain.length} facts\n`);
+}
+if (runs.length !== orderedJobs.length) {
+  throw new Error(`Incomplete paired run: expected ${orderedJobs.length} requests, found ${runs.length}`);
 }
 
 function forVariant(variant: Run["variant"]): Run[] { return runs.filter((run) => run.variant === variant); }
@@ -227,6 +264,8 @@ const pairedDifferenceCi95 = bootstrapInterval(
 );
 const nonInferiorityMargin = -0.05;
 const summary = {
+  schemaVersion: 2, methodologyVersion: "live-paired-fact-recall-v2",
+  corpusId: LIVE_V2_CORPUS_ID, corpusFingerprint,
   provider: "deepseek", model: MODEL, thinking: "disabled", preset: "balanced", trials, taskFilter: taskFilter ?? null,
   requests: runs.length, originalPromptTokens: originalInput, optimizedPromptTokens: optimizedInput,
   promptTokensRemoved: originalInput - optimizedInput,
@@ -245,9 +284,10 @@ const summary = {
   estimatedMaximumCostUsd: Math.round(((inputTokens * INPUT_PRICE_PER_MILLION + outputTokens * OUTPUT_PRICE_PER_MILLION) / 1_000_000) * 1e8) / 1e8,
   measuredAt: new Date().toISOString(), source: "DeepSeek API usage",
 };
-writeFileSync(join(resultsDir, `deepseek-live${resultSuffix}.json`), JSON.stringify({ summary, runs }, null, 2), "utf8");
-writeFileSync(join(resultsDir, `DEEPSEEK${resultSuffix}.md`), [
+writeFileSync(join(resultsDir, `${resultStem}.json`), JSON.stringify({ summary, runs }, null, 2), "utf8");
+writeFileSync(join(resultsDir, `DEEPSEEK-V2${resultSuffix}.md`), [
   "# iritoken live DeepSeek benchmark", "", `- Model: \`${MODEL}\` (thinking disabled)`,
+  `- Corpus: \`${LIVE_V2_CORPUS_ID}\``, `- Corpus SHA-256: \`${corpusFingerprint}\``,
   `- Trials / requests: ${trials} / ${runs.length}`, `- Original input tokens: ${originalInput.toLocaleString("en-US")}`,
   `- Task filter: ${taskFilter ?? "all"}`,
   `- Optimized input tokens: ${optimizedInput.toLocaleString("en-US")}`,

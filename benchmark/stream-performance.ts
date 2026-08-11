@@ -1,4 +1,6 @@
 import { execFileSync } from "node:child_process";
+import { writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import {
@@ -86,8 +88,22 @@ if (process.argv[2] === "--worker") {
   }
   const buffered = results.find((item) => item.mode === "buffered");
   const terminal = results.find((item) => item.mode === "terminal");
-  if (!buffered || !terminal || terminal.peakRssMiB >= buffered.peakRssMiB) {
-    process.stderr.write("Memory-bounded terminal stream did not reduce peak RSS.\n");
+  const peakRssRatio = buffered && terminal ? terminal.peakRssMiB / buffered.peakRssMiB : null;
+  const passed = peakRssRatio !== null && peakRssRatio <= 0.6;
+  writeFileSync(join(dirname(script), "results", "stream-performance.json"), `${JSON.stringify({
+    schemaVersion: 1,
+    methodologyVersion: "isolated-stream-median-v1",
+    generatedAt: new Date().toISOString(),
+    runtime: { node: process.version, platform: process.platform, arch: process.arch },
+    targetBytes,
+    trialsPerMode: 3,
+    results,
+    metrics: { terminalToBufferedPeakRssRatio: peakRssRatio },
+    budget: { maxTerminalToBufferedPeakRssRatio: 0.6 },
+    passed,
+  }, null, 2)}\n`);
+  if (!passed) {
+    process.stderr.write("Memory-bounded terminal stream exceeded 60% of buffered peak RSS.\n");
     process.exitCode = 1;
   }
 }

@@ -5,12 +5,16 @@ import {
   fstatSync,
   lstatSync,
   openSync,
-  readFileSync,
+  readSync,
   realpathSync,
-  statSync,
+  renameSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
+import type { Stats } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { optimize } from "../pipeline/optimize.js";
 import { estimateTokens } from "../token/counter.js";
@@ -190,15 +194,40 @@ function formatCount(n: number): string {
   return n.toLocaleString("en-US");
 }
 
-async function readInput(file: string | undefined, maximumBytes: number): Promise<string> {
+interface ReadInputResult {
+  text: string;
+  fileStats?: Stats;
+}
+
+async function readInput(
+  file: string | undefined,
+  maximumBytes: number,
+): Promise<ReadInputResult> {
   if (file) {
-    const size = statSync(file).size;
-    if (size > maximumBytes) throw new InputLimitError(size, maximumBytes, "bytes");
-    const input = readFileSync(file);
-    if (input.byteLength > maximumBytes) {
-      throw new InputLimitError(input.byteLength, maximumBytes, "bytes");
+    const fd = openSync(file, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+    try {
+      const fileStats = fstatSync(fd);
+      if (!fileStats.isFile()) throw new Error("input path must be a regular file");
+      if (fileStats.size > maximumBytes) {
+        throw new InputLimitError(fileStats.size, maximumBytes, "bytes");
+      }
+
+      const chunks: Buffer[] = [];
+      const buffer = Buffer.allocUnsafe(64 * 1024);
+      let bytes = 0;
+      for (;;) {
+        const bytesRead = readSync(fd, buffer, 0, buffer.byteLength, null);
+        if (bytesRead === 0) break;
+        bytes += bytesRead;
+        if (bytes > maximumBytes) {
+          throw new InputLimitError(bytes, maximumBytes, "bytes");
+        }
+        chunks.push(Buffer.from(buffer.subarray(0, bytesRead)));
+      }
+      return { text: Buffer.concat(chunks, bytes).toString("utf8"), fileStats };
+    } finally {
+      closeSync(fd);
     }
-    return input.toString("utf8");
   }
   const chunks: Buffer[] = [];
   let bytes = 0;
@@ -208,10 +237,19 @@ async function readInput(file: string | undefined, maximumBytes: number): Promis
     if (bytes > maximumBytes) throw new InputLimitError(bytes, maximumBytes, "bytes");
     chunks.push(buffer);
   }
-  return Buffer.concat(chunks).toString("utf8");
+  return { text: Buffer.concat(chunks, bytes).toString("utf8") };
 }
 
-function writeOutputSecurely(inputPath: string | undefined, outputPath: string, text: string): void {
+function sameFile(left: Stats, right: Stats): boolean {
+  return left.dev === right.dev && left.ino === right.ino;
+}
+
+function writeOutputSecurely(
+  inputPath: string | undefined,
+  inputStats: Stats | undefined,
+  outputPath: string,
+  text: string,
+): void {
   if (inputPath) {
     try {
       if (realpathSync(inputPath) === realpathSync(outputPath)) {
@@ -222,33 +260,69 @@ function writeOutputSecurely(inputPath: string | undefined, outputPath: string, 
     }
   }
   try {
-    if (lstatSync(outputPath).isSymbolicLink()) {
+    const outputStats = lstatSync(outputPath);
+    if (outputStats.isSymbolicLink()) {
       throw new Error("refusing to write through an output symlink");
+    }
+    if (!outputStats.isFile()) throw new Error("output path must be a regular file");
+    if (inputStats && sameFile(inputStats, outputStats)) {
+      throw new Error("output path must not overwrite the input file");
     }
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
+
   const noFollow = constants.O_NOFOLLOW ?? 0;
-  const fd = openSync(
-    outputPath,
-    constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | noFollow,
-    0o600,
-  );
+  const outputDirectory = dirname(outputPath);
+  const outputName = basename(outputPath);
+  let temporaryPath = "";
+  let fd = -1;
   try {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      temporaryPath = join(
+        outputDirectory,
+        `.${outputName}.iritoken-${randomBytes(8).toString("hex")}.tmp`,
+      );
+      try {
+        fd = openSync(
+          temporaryPath,
+          constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | noFollow,
+          0o600,
+        );
+        break;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      }
+    }
+    if (fd === -1) throw new Error("could not create a temporary output file");
     if (!fstatSync(fd).isFile()) throw new Error("output path is not a regular file");
     writeFileSync(fd, text, "utf8");
-  } finally {
     closeSync(fd);
+    fd = -1;
+    renameSync(temporaryPath, outputPath);
+    temporaryPath = "";
+  } finally {
+    if (fd !== -1) closeSync(fd);
+    if (temporaryPath) {
+      try {
+        unlinkSync(temporaryPath);
+      } catch {
+        // Preserve the original write error; a stale owner-only temp file is safer
+        // than throwing from finally and hiding why the output operation failed.
+      }
+    }
   }
 }
 
 function renderReport(original: string, result: OptimizeResult): string {
   const s = result.stats;
+  const originalBytes = Buffer.byteLength(original);
+  const optimizedBytes = Buffer.byteLength(result.text);
   const rows: string[] = [
     "iritoken",
     "",
-    `Original size     ${formatBytes(s.originalCharacters).padEnd(10)} ${formatCount(s.originalCharacters)} chars`,
-    `Optimized size    ${formatBytes(s.optimizedCharacters).padEnd(10)} ${formatCount(s.optimizedCharacters)} chars`,
+    `Original size     ${formatBytes(originalBytes).padEnd(10)} ${formatCount(s.originalCharacters)} chars`,
+    `Optimized size    ${formatBytes(optimizedBytes).padEnd(10)} ${formatCount(s.optimizedCharacters)} chars`,
     `Reduction         ${s.reductionPercentage.toFixed(1)}%`,
   ];
 
@@ -316,7 +390,7 @@ export async function mainImpl(argv: string[]): Promise<number> {
     return 0;
   }
   if (options.version) {
-    let version = "0.1.0";
+    let version = "0.2.0";
     try {
       const pkg = require("../../package.json") as { version: string };
       version = pkg.version;
@@ -332,19 +406,20 @@ export async function mainImpl(argv: string[]): Promise<number> {
     return 0;
   }
 
-  let input: string;
+  let inputResult: ReadInputResult;
   try {
-    input = await readInput(options.file, options.maxInputBytes);
+    inputResult = await readInput(options.file, options.maxInputBytes);
   } catch (error) {
     process.stderr.write(`iritoken: could not read input: ${safeDiagnostic(error)}\n`);
     return 1;
   }
 
+  const input = inputResult.text;
   const result = optimize(input, { preset: options.preset });
 
   if (options.output && !options.dryRun) {
     try {
-      writeOutputSecurely(options.file, options.output, result.text);
+      writeOutputSecurely(options.file, inputResult.fileStats, options.output, result.text);
     } catch (error) {
       process.stderr.write(`iritoken: could not write output: ${safeDiagnostic(error)}\n`);
       return 1;
@@ -354,10 +429,20 @@ export async function mainImpl(argv: string[]): Promise<number> {
   if (options.stdout) {
     process.stdout.write(result.text);
   } else if (options.json) {
+    const originalBytes = Buffer.byteLength(input);
+    const optimizedBytes = Buffer.byteLength(result.text);
     process.stdout.write(JSON.stringify({
       schemaVersion: 1,
       preset: options.preset,
       text: options.dryRun || options.output ? undefined : result.text,
+      bytes: {
+        original: originalBytes,
+        optimized: optimizedBytes,
+        removed: originalBytes - optimizedBytes,
+        reductionPercentage: originalBytes === 0
+          ? 0
+          : Math.round(((originalBytes - optimizedBytes) / originalBytes) * 10_000) / 100,
+      },
       stats: result.stats,
     }) + "\n");
   } else if (!(options.quiet && options.output)) {

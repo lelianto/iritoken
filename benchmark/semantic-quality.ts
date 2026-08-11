@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { optimize } from "../src/pipeline/optimize.js";
 import type { PresetName } from "../src/types.js";
@@ -112,3 +115,16 @@ for (const [cleaner, metric] of Object.entries(byCleaner)) {
   );
 }
 if (unexpectedTransformations > 0) process.exitCode = 1;
+writeFileSync(join(dirname(fileURLToPath(import.meta.url)), "results", "semantic-quality.json"), `${JSON.stringify({
+  schemaVersion: 1,
+  methodologyVersion: "semantic-invariants-v1",
+  generatedAt: new Date().toISOString(),
+  runtime: { node: process.version, platform: process.platform, arch: process.arch },
+  checks,
+  cases: cases.length,
+  presets: 3,
+  byCleaner,
+  unexpectedTransformations,
+  budget: { maxUnexpectedTransformations: 0 },
+  passed: unexpectedTransformations === 0,
+}, null, 2)}\n`);
