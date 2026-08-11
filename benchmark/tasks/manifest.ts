@@ -32,6 +32,18 @@ export interface BenchmarkTask {
 
 export const TASKS: BenchmarkTask[] = [
   {
+    name: "semantic-whitespace-preservation",
+    fixture: "semantic-whitespace.txt",
+    description: "Preserve Markdown hard breaks and blank lines inside a YAML block scalar.",
+    verification: {
+      mustContain: [
+        "Markdown hard break follows this line.  \n",
+        "The previous two spaces are meaningful.  \n",
+        "  first paragraph\n\n\n  second paragraph",
+      ],
+    },
+  },
+  {
     name: "source-code-repetition-preservation",
     fixture: "repeated-source-code.txt",
     description: "Preserve repeated source-code entries exactly instead of converting them into prose markers.",

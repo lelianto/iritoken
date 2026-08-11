@@ -3,12 +3,11 @@ import type { Cleaner, CleanerResult, ContentDetection } from "../types.js";
 /**
  * Conservative whitespace normalisation.
  *
- * Always applied:
+ * Applied only to confidently detected generic terminal output:
  *  1. Trailing whitespace on each line.
  *  2. Excessive blank lines (3+ newlines -> 2 newlines, i.e. at most one
  *     empty line between blocks).
  *
- * "Clearly safe" only (skipped for source-code-like content):
  *  3. Runs of 3+ spaces between non-space characters collapse to a single
  *     space, unless the line looks tabular (contains a pipe character).
  *     Leading indentation is never touched.
@@ -29,6 +28,12 @@ export class WhitespaceCleaner implements Cleaner {
     if (text === "") {
       return { text, changes: [], confidence: "high" };
     }
+    if (
+      detection.type !== "generic-terminal-output" ||
+      detection.confidence !== "high"
+    ) {
+      return { text, changes: [], confidence: "low" };
+    }
 
     let trailingCount = 0;
     let blankCount = 0;
@@ -48,21 +53,16 @@ export class WhitespaceCleaner implements Cleaner {
       });
     } while (out !== previous);
 
-    // Mid-line alignment can carry structure in compiler/test/agent output.
-    // Only normalize it when detection strongly identifies generic terminal
-    // output; trailing whitespace and blank-line cleanup remain universal.
-    if (detection.type === "generic-terminal-output" && detection.confidence === "high") {
-      out = out
-        .split("\n")
-        .map((line) => {
-          if (HAS_PIPE.test(line)) return line;
-          return line.replace(MIDLINE_SPACES, () => {
-            midlineCount += 1;
-            return " ";
-          });
-        })
-        .join("\n");
-    }
+    out = out
+      .split("\n")
+      .map((line) => {
+        if (HAS_PIPE.test(line)) return line;
+        return line.replace(MIDLINE_SPACES, () => {
+          midlineCount += 1;
+          return " ";
+        });
+      })
+      .join("\n");
 
     const total = trailingCount + blankCount + midlineCount;
     return {

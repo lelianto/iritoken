@@ -87,6 +87,15 @@ describe("optimize pipeline", () => {
     }
   });
 
+  it("preserves meaningful Markdown and YAML whitespace", () => {
+    const markdown = "first line  \nsecond line  \n";
+    const yaml = "message: |\n  first\n\n\n  second\n";
+    for (const preset of ["safe", "balanced", "aggressive"] as const) {
+      assert.equal(optimize(markdown, { preset }).text, markdown);
+      assert.equal(optimize(yaml, { preset }).text, yaml);
+    }
+  });
+
   it("balanced preset preserves passing-test context in failure reports", () => {
     const r = optimize(VITEST, { preset: "balanced" });
     assert.equal(r.stats.transformations["test-output"], undefined);
@@ -133,7 +142,9 @@ describe("optimize pipeline", () => {
   });
 
   it("handles very large input without pathological behavior", () => {
-    const big = ("line of terminal output here\n\n\n\n\n" ).repeat(20000) + "end\n";
+    const big = (
+      "[12:00:00] starting terminal step\n[12:00:01] running terminal step\n[12:00:02] finished terminal step\n\n\n\n\n"
+    ).repeat(10000) + "end\n";
     const start = performance.now();
     const r = optimize(big, { preset: "balanced" });
     const ms = performance.now() - start;

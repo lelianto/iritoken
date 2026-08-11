@@ -50,6 +50,16 @@ describe("WhitespaceCleaner", () => {
     assert.equal(cleaner.clean(text, { type: "test-output", confidence: "medium" }).text, text);
   });
 
+  it("preserves semantic whitespace in Markdown, source, and unknown text", () => {
+    const markdown = "first line  \nsecond line  \n";
+    const yaml = "message: |\n  first\n\n\n  second\n";
+    const source = "const snapshot = `first   value\n\n\nsecond`;\n";
+
+    assert.equal(cleaner.clean(markdown, UNKNOWN).text, markdown);
+    assert.equal(cleaner.clean(yaml, { type: "generic-terminal-output", confidence: "medium" }).text, yaml);
+    assert.equal(cleaner.clean(source, SOURCE).text, source);
+  });
+
   it("leaves double spaces in prose untouched", () => {
     assert.equal(cleaner.clean("a  b", TERMINAL).text, "a  b");
   });

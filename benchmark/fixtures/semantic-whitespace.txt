@@ -1,0 +1,8 @@
+Markdown hard break follows this line.  
+The previous two spaces are meaningful.  
+
+message: |
+  first paragraph
+
+
+  second paragraph
