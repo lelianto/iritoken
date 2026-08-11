@@ -7,6 +7,12 @@
 - Add indexed and aggregate statistics to message optimization while preserving
   the existing `stats` field.
 - Report UTF-8 bytes independently from characters in CLI text and JSON output.
+- Harden CLI file handling: reject symlink/non-regular inputs and outputs,
+  detect input/output hard-link aliasing, enforce byte limits while reading the
+  already-open descriptor, and publish output through an owner-only temporary
+  file plus atomic rename.
+- Expand terminal-injection cleanup to OSC clipboard payloads, C1 controls, and
+  DCS/SOS/PM/APC control-string families, including malformed partial escapes.
 - Add semantic, detection, performance, and stream regression gates with
   versioned machine-readable artifacts.
 - Validate the balanced preset against a newly authored six-task live corpus
