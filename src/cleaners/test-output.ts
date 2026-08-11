@@ -1,7 +1,7 @@
 import type { Cleaner, CleanerResult, ContentDetection } from "../types.js";
 
 /**
- * Conservative test-runner output cleanup (Vitest / Jest).
+ * Conservative test-runner output cleanup (Vitest, Jest, pytest, Go, Cargo).
  *
  * The ONLY transformation applied is collapsing consecutive PASSING test
  * lines — e.g. a wall of `✓ passed test A`, `✓ passed test B`, ... —
@@ -21,8 +21,10 @@ import type { Cleaner, CleanerResult, ContentDetection } from "../types.js";
  *   recognised as test-runner output.
  */
 
-const PASS_LINE = /^\s*(?:[✓√✔])\s+/;
-const FAILURE_LINE = /^\s*(?:[×✗✘✕]\s+|FAIL(?:ED)?\b)/m;
+const PASS_LINE = /^(?:\s*[✓√✔]\s+|\S+::\S+\s+PASSED(?:\s|$)|\s*---\s+PASS:\s+\S+|test\s+\S+\s+\.\.\.\s+ok$)/;
+const FAILURE_LINE = /^(?:\s*[×✗✘✕]\s+|\s*FAIL(?:ED)?\b|\S+::\S+\s+FAILED(?:\s|$)|\s*---\s+FAIL:\s+\S+|test\s+\S+\s+\.\.\.\s+FAILED$|test result:\s+FAILED)/m;
+const GO_RUN_LINE = /^\s*=== RUN\s+(\S+)/;
+const GO_PASS_LINE = /^\s*--- PASS:\s+(\S+)(?:\s+\(|$)/;
 
 function indentOf(line: string): string {
   const match = /^\s*/.exec(line);
@@ -50,20 +52,25 @@ export class TestOutputCleaner implements Cleaner {
     const outLines: string[] = [];
     let collapses = 0;
     let runStart = -1;
+    let runEnd = -1;
+    let runTests = 0;
 
-    const flushRun = (end: number) => {
+    const flushRun = () => {
       if (runStart === -1) return;
-      const runLength = end - runStart;
       const start = runStart;
+      const end = runEnd;
+      const testCount = runTests;
       runStart = -1;
+      runEnd = -1;
+      runTests = 0;
 
       let collapse = false;
-      if (runLength >= 3) {
+      if (testCount >= 3) {
         const indent = indentOf(rawLines[start] ?? "");
-        const candidate = `${indent}✓ ${runLength} test cases passed`;
+        const candidate = `${indent}✓ ${testCount} test cases passed`;
         let originalLength = 0;
-        for (let k = 0; k < runLength; k++) {
-          originalLength += (rawLines[start + k] ?? "").length;
+        for (let k = start; k < end; k++) {
+          originalLength += (rawLines[k] ?? "").length;
         }
         collapse = candidate.length < originalLength;
         if (collapse) {
@@ -72,22 +79,33 @@ export class TestOutputCleaner implements Cleaner {
         }
       }
       if (!collapse) {
-        for (let k = 0; k < runLength; k++) {
-          outLines.push(rawLines[start + k] ?? "");
+        for (let k = start; k < end; k++) {
+          outLines.push(rawLines[k] ?? "");
         }
       }
     };
 
-    for (let i = 0; i < rawLines.length; i++) {
+    for (let i = 0; i < rawLines.length;) {
       const line = rawLines[i] ?? "";
-      if (PASS_LINE.test(line)) {
+      const goRun = GO_RUN_LINE.exec(line);
+      const goPass = GO_PASS_LINE.exec(rawLines[i + 1] ?? "");
+      const recordLength = goRun && goPass && goRun[1] === goPass[1]
+        ? 2
+        : PASS_LINE.test(line)
+          ? 1
+          : 0;
+      if (recordLength > 0) {
         if (runStart === -1) runStart = i;
+        runEnd = i + recordLength;
+        runTests += 1;
+        i += recordLength;
         continue;
       }
-      flushRun(i);
+      flushRun();
       outLines.push(line);
+      i += 1;
     }
-    flushRun(rawLines.length);
+    flushRun();
 
     const out = outLines.join(crlf ? "\r\n" : "\n");
 

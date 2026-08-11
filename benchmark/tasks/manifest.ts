@@ -33,6 +33,33 @@ export interface BenchmarkTask {
 
 export const TASKS: BenchmarkTask[] = [
   {
+    name: "pytest-passing-summary",
+    fixture: "pytest-passing.txt",
+    workload: "test-output",
+    description: "Preserve the authoritative pytest success summary while compacting verbose passing cases when enabled.",
+    verification: {
+      mustContain: ["4 passed in 0.08s"],
+    },
+  },
+  {
+    name: "go-test-passing-summary",
+    fixture: "go-test-passing.txt",
+    workload: "test-output",
+    description: "Preserve the Go package and successful final status while compacting passing cases when enabled.",
+    verification: {
+      mustContain: ["PASS", "example.com/project/api"],
+    },
+  },
+  {
+    name: "cargo-test-passing-summary",
+    fixture: "cargo-test-passing.txt",
+    workload: "test-output",
+    description: "Preserve Cargo's complete test result summary while compacting passing cases when enabled.",
+    verification: {
+      mustContain: ["test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out"],
+    },
+  },
+  {
     name: "semantic-whitespace-preservation",
     fixture: "semantic-whitespace.txt",
     workload: "structured-text",

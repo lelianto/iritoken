@@ -1,0 +1,5 @@
+tests/test_api.py::test_create_user PASSED                         [ 25%]
+tests/test_api.py::test_read_user PASSED                           [ 50%]
+tests/test_api.py::test_update_user PASSED                         [ 75%]
+tests/test_api.py::test_delete_user PASSED                         [100%]
+============================== 4 passed in 0.08s ===============================

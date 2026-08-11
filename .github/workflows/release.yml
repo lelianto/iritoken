@@ -27,7 +27,12 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
       - run: npm ci
-      - run: npm run prepublishOnly
+      - name: Mandatory security gate
+        run: npm run test:security
+      - name: Mandatory real-case gate
+        run: npm run test:real-cases
+      - name: Package lifecycle verification
+        run: npm run prepublishOnly
       - run: npm run benchmark:verify
       - run: npm pack --dry-run
       - run: npm sbom --sbom-format cyclonedx > iritoken-sbom.cdx.json

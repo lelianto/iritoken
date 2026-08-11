@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo.svg" width="112" height="112" alt="iritoken logo" />
+  <img src="https://raw.githubusercontent.com/lelianto/iritoken/main/assets/logo.svg" width="112" height="112" alt="iritoken logo" />
 
   <h1>iritoken</h1>
 
@@ -75,7 +75,7 @@ loop may resend the same noisy context several times. Even small deterministic
 savings compound across prompts, retries, models, and users.
 
 <p align="center">
-  <img src="assets/context-optimization.png" width="900" alt="Raw coding context is reduced to meaningful errors, evidence, locations, values, and summaries" />
+  <img src="https://raw.githubusercontent.com/lelianto/iritoken/main/assets/context-optimization.png" width="900" alt="Raw coding context is reduced to meaningful errors, evidence, locations, values, and summaries" />
 </p>
 
 `iritoken` is intentionally narrower than a summarizer. It removes patterns it
@@ -337,7 +337,7 @@ See [the integration guide](docs/integrations.md) for additional examples.
 ## How it works
 
 <p align="center">
-  <img src="assets/cleaning-pipeline.png" width="720" alt="iritoken cleaning pipeline from input through content detection and cleaners to optimized text, statistics, and decisions" />
+  <img src="https://raw.githubusercontent.com/lelianto/iritoken/main/assets/cleaning-pipeline.png" width="720" alt="iritoken cleaning pipeline from input through content detection and cleaners to optimized text, statistics, and decisions" />
 </p>
 
 | Cleaner | What it changes | What it preserves |
@@ -377,18 +377,41 @@ fixtures. Compression is useful only when task quality survives.
 
 | Metric | Result |
 | --- | ---: |
-| Quality tasks | **13/13 → 13/13** |
+| Quality tasks | **16/16 → 16/16** |
 | Success regression | **0 percentage points** |
-| Estimated input tokens | **2,759 → 2,454** |
-| Estimated token reduction | **11.1%** |
-| Balanced corpus character reduction | **12.7%** |
-| Corpus regression matrix | **13 tasks × 3 presets passed** |
-| Semantic invariants | **21/21 passed** |
+| Estimated input tokens | **2,910 → 2,484** |
+| Estimated token reduction | **14.6%** |
+| Balanced corpus character reduction | **15.9%** |
+| Corpus regression matrix | **16 tasks × 3 presets passed** |
+| Semantic invariants | **33/33 passed** |
 | Terminal eligibility | **100% recall, 100% specificity** |
-| Unit and integration tests | **134/134 passed** |
+| Unit and integration tests | **139/139 passed** |
 
-The deterministic corpus includes npm, TypeScript, Vitest, Jest, stack traces,
-repetitive logs, mixed agent context, Docker, Kubernetes, and Python failures.
+The deterministic corpus includes npm, TypeScript, Vitest, Jest, pytest, Go,
+Cargo, JavaScript and Python stack traces, repetitive logs, mixed agent
+context, Docker, Kubernetes, and Python failures.
+
+The fixture percentages describe character reduction, not information loss.
+For example, Python decreases from 544 to 401 characters by replacing three
+identical frame/source records with one record and an explicit repetition
+count. Fully passing pytest, Go, and Cargo reports remove repetitive case lists
+while retaining their authoritative summaries. If a supported failure marker
+is present, the complete test report is preserved.
+
+| New 0.3.0 fixture | Original | Optimized | Character reduction |
+| --- | ---: | ---: | ---: |
+| Python traceback | 544 | 401 | **26.3%** |
+| pytest passing report | 377 | 103 | **72.7%** |
+| Go passing report | 269 | 63 | **76.6%** |
+| Cargo passing report | 214 | 114 | **46.7%** |
+
+The 15.9% corpus figure is calculated from total characters across every
+fixture, including sensitive inputs deliberately left unchanged. The 14.6%
+token figure is a heuristic estimate—an average of `characters / 4` and a
+word-like count—not an exact model tokenizer result. See the
+[0.3.0 coverage methodology](docs/enhancements/005-python-and-test-runner-coverage.md)
+for before/after examples, formulas, safeguards, validation evidence, and
+limitations.
 
 ### Live-model quality result
 
@@ -417,13 +440,13 @@ Latest isolated balanced-preset run (median of three processes):
 
 | Input | Time | Peak RSS | Throughput cost |
 | --- | ---: | ---: | ---: |
-| 10 KiB | ~2.2 ms | ~75.0 MiB | ~228 ms/MiB |
-| 100 KiB | ~5.6 ms | ~76.0 MiB | ~57 ms/MiB |
-| 1 MiB | ~25.3 ms | ~89.7 MiB | ~25 ms/MiB |
-| 10 MiB | ~227.7 ms | ~231.5 MiB | ~23 ms/MiB |
+| 10 KiB | ~3.3 ms | ~75.6 MiB | ~337 ms/MiB |
+| 100 KiB | ~7.6 ms | ~76.1 MiB | ~78 ms/MiB |
+| 1 MiB | ~39.0 ms | ~91.1 MiB | ~39 ms/MiB |
+| 10 MiB | ~277.1 ms | ~233.8 MiB | ~28 ms/MiB |
 
 For a 12 MiB terminal workload, the incremental transform used ~89.4 MiB peak
-RSS versus ~276.2 MiB for the generic buffered transform while producing the
+RSS versus ~275.9 MiB for the generic buffered transform while producing the
 same output size.
 
 See the [generated compression report](benchmark/results/REPORT.md) and
@@ -483,6 +506,8 @@ npm run build
 npm run lint
 npm run typecheck
 npm test
+npm run test:security
+npm run test:real-cases
 npm run benchmark:verify
 npm run benchmark:detection
 npm run pack:smoke
@@ -491,8 +516,17 @@ npm run release:check
 
 GitHub Actions verifies Node.js 18, 20, and 22, audits production dependencies,
 runs deterministic benchmarks, and installs the generated tarball before a
-release can be published. The manual release workflow defaults to dry-run and
-supports npm provenance.
+release can be published. Security and real-case suites are separate required
+CI jobs and explicit release-workflow steps.
+
+The npm `prepublishOnly` lifecycle also runs both suites. Consequently, a local
+`npm publish` and the trusted-publishing workflow stop before packaging if any
+security regression, required-fact loss, unexpected semantic transformation,
+or labelled detection regression is found. `test:security` covers resource
+limits, terminal-control injection, filesystem alias/symlink handling, CLI
+input boundaries, and stream limits. `test:real-cases` covers the committed
+corpus, labelled detection set, and executable semantic invariants. The manual
+release workflow defaults to dry-run and supports npm provenance.
 
 ## Project structure
 

@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.3.0 - 2026-08-11
+
+- Make security regressions and committed real-case validation explicit,
+  mandatory gates for local npm publishing, CI, and trusted releases.
+- Detect Python tracebacks as stack traces so repeated Python frames are
+  compacted by the balanced and aggressive presets while exception details,
+  source lines, and unique frames remain intact.
+- Recognize and compact consecutive passing-test records from pytest, Go test,
+  and Cargo in addition to Vitest and Jest.
+- Preserve complete reports whenever the supported runners emit a failure.
+- Expand deterministic corpus, detection, and semantic gates for the new
+  runtime and test-runner formats.
+
+## 0.2.2 - 2026-08-11
+
+- Make `npm run release:check` repeatable for already-published versions by
+  validating with `npm pack --dry-run` instead of contacting the publish
+  endpoint.
+- Reduce the npm tarball by excluding large documentation PNGs while retaining
+  the small package logo and loading README images from their GitHub URLs.
+- Add package-content and compressed-size regression checks to the packed
+  artifact smoke test.
+
 ## 0.2.1 - 2026-08-11
 
 - Replace the not-yet-indexed Scorecard viewer target with the repository's

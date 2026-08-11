@@ -33,6 +33,19 @@ function isFrame(line: string): boolean {
   return false;
 }
 
+function indentation(line: string): number {
+  return /^\s*/.exec(line)?.[0].length ?? 0;
+}
+
+function pythonRecordLength(lines: readonly string[], index: number): number {
+  const frame = lines[index] ?? "";
+  if (!PYTHON_FRAME.test(frame)) return 0;
+  const source = lines[index + 1] ?? "";
+  return source.trim() !== "" && indentation(source) > indentation(frame) && !isFrame(source)
+    ? 2
+    : 1;
+}
+
 export class StackTraceCleaner implements Cleaner {
   readonly id = "stack-trace";
   readonly description = "Collapse repeated consecutive stack frames";
@@ -55,6 +68,28 @@ export class StackTraceCleaner implements Cleaner {
 
     for (let i = 0; i < rawLines.length; ) {
       const line = rawLines[i] ?? "";
+      const pythonLength = pythonRecordLength(rawLines, i);
+      if (pythonLength > 0 && !REPEATED_MARKER.test(line)) {
+        const record = rawLines.slice(i, i + pythonLength);
+        let repeats = 1;
+        while (
+          i + (repeats + 1) * pythonLength <= rawLines.length &&
+          record.every(
+            (value, offset) => rawLines[i + repeats * pythonLength + offset] === value,
+          )
+        ) repeats += 1;
+        if (repeats >= 2) {
+          const marker = ` [repeated ${repeats} times]`;
+          const candidate = [`${record[0] ?? ""}${marker}`, ...record.slice(1)];
+          const original = rawLines.slice(i, i + repeats * pythonLength);
+          if (candidate.join("\n").length < original.join("\n").length) {
+            lines.push(...candidate);
+            collapseCount += 1;
+            i += repeats * pythonLength;
+            continue;
+          }
+        }
+      }
       if (!isFrame(line) || REPEATED_MARKER.test(line)) {
         lines.push(line);
         i += 1;

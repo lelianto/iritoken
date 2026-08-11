@@ -62,6 +62,20 @@ describe("classify content type", () => {
     assert.equal(found.type, "stack-trace");
   });
 
+  it("detects Python tracebacks", () => {
+    const text = 'Traceback (most recent call last):\n  File "/app/a.py", line 1, in run\n  File "/app/b.py", line 2, in call\n  File "/app/b.py", line 2, in call\nKeyError: "id"';
+    assert.deepEqual(classify(text), { type: "stack-trace", confidence: "medium" });
+  });
+
+  it("detects pytest, Go, and Cargo passing output", () => {
+    const samples = [
+      "tests/test_api.py::test_create PASSED [ 33%]\ntests/test_api.py::test_read PASSED [ 66%]\ntests/test_api.py::test_delete PASSED [100%]\n=== 3 passed in 0.03s ===",
+      "--- PASS: TestCreate (0.00s)\n--- PASS: TestRead (0.00s)\n--- PASS: TestDelete (0.00s)\nPASS\nok example/api 0.003s",
+      "test tests::create ... ok\ntest tests::read ... ok\ntest tests::delete ... ok\ntest result: ok. 3 passed; 0 failed",
+    ];
+    for (const text of samples) assert.equal(classify(text).type, "test-output");
+  });
+
   it("detects source code", () => {
     const found = classify(SOURCE);
     assert.equal(found.type, "source-code");

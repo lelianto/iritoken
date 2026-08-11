@@ -10,9 +10,13 @@ import type { Confidence, ContentDetection, ContentType } from "../types.js";
 
 const TEST_LINE = /^\s*(?:[✓√✔]|×|✗|✘|✕)\s/;
 const TEST_LINE_PLAIN = /^(?:PASS|FAIL)\b/;
-const TEST_SUMMARY = /^\s*(?:Test Files|Tests\s|Snapshots\s|Test Suites|Tests:)\s/;
+const TEST_LINE_PYTEST = /^\S+::\S+\s+(?:PASSED|FAILED)(?:\s|$)/;
+const TEST_LINE_GO = /^\s*---\s+(?:PASS|FAIL):\s+\S+/;
+const TEST_LINE_CARGO = /^test\s+\S+\s+\.\.\.\s+(?:ok|FAILED)$/;
+const TEST_SUMMARY = /^\s*(?:Test Files|Tests\s|Snapshots\s|Test Suites|Tests:|=+\s+\d+\s+(?:passed|failed)|test result:|ok\s+\S+)\s?/;
 const STACK_FRAME = /^\s+at\s.+/;
 const STACK_FRAME_ANON = /^at\s.+/;
+const PYTHON_FRAME = /^\s+File\s".+",\sline\s\d+,\sin\s.+/;
 const STACK_HEADER = /\b(Error|Exception|Traceback)\b/;
 const CODE_LINE =
   /^\s*(?:import\s|export\s|const\s|let\s|var\s|function\s|class\s|interface\s|type\s|return\s|if\s*\(|for\s*\(|while\s*\(|switch\s*\(|case\s|=>)/;
@@ -44,9 +48,15 @@ export function classify(text: string): ContentDetection {
   let terminalLines = 0;
 
   for (const line of lines) {
-    if (TEST_LINE.test(line) || TEST_LINE_PLAIN.test(line)) testLines += 1;
+    if (
+      TEST_LINE.test(line) ||
+      TEST_LINE_PLAIN.test(line) ||
+      TEST_LINE_PYTEST.test(line) ||
+      TEST_LINE_GO.test(line) ||
+      TEST_LINE_CARGO.test(line)
+    ) testLines += 1;
     if (TEST_SUMMARY.test(line)) summaryLines += 1;
-    if (STACK_FRAME.test(line) || STACK_FRAME_ANON.test(line)) stackFrames += 1;
+    if (STACK_FRAME.test(line) || STACK_FRAME_ANON.test(line) || PYTHON_FRAME.test(line)) stackFrames += 1;
     if (STACK_HEADER.test(line)) stackHeaders += 1;
     if (CODE_LINE.test(line)) codeLines += 1;
     if (ANSI_ESCAPE.test(line)) ansiLines += 1;
@@ -69,7 +79,7 @@ export function classify(text: string): ContentDetection {
     };
   }
 
-  // Raw V8-ish stack traces.
+  // Raw V8 and Python stack traces.
   if (stackFrames >= 3) {
     const conf: Confidence =
       stackHeaders >= 1 && stackFrames >= 5

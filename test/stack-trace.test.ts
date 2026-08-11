@@ -67,7 +67,25 @@ describe("StackTraceCleaner", () => {
     const text =
       'Traceback (most recent call last):\n  File "/app/app.py", line 10, in main\n  File "/app/app.py", line 10, in main\n  File "/app/app.py", line 10, in main\n    do_thing()';
     const r = cleaner.clean(text, STACK_DET);
-    assert.ok(!r.text.match(/line 10, in main\n  File \/app\/app.py", line 10, in main/));
+    assert.ok(r.text.includes('File "/app/app.py", line 10, in main [repeated 3 times]'));
+    assert.ok(r.text.includes("    do_thing()"));
+  });
+
+  it("collapses repeated Python frame and source-line records", () => {
+    const text = [
+      "Traceback (most recent call last):",
+      '  File "/app/client.py", line 41, in fetch',
+      '    return response.json()["account"]',
+      '  File "/app/client.py", line 41, in fetch',
+      '    return response.json()["account"]',
+      '  File "/app/client.py", line 41, in fetch',
+      '    return response.json()["account"]',
+      "KeyError: 'account'",
+    ].join("\n");
+    const result = cleaner.clean(text, STACK_DET);
+    assert.ok(result.text.includes('line 41, in fetch [repeated 3 times]'));
+    assert.equal(result.text.split('return response.json()["account"]').length - 1, 1);
+    assert.ok(result.text.endsWith("KeyError: 'account'"));
   });
 
   it("handles very large stack output", () => {

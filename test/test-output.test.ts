@@ -103,4 +103,26 @@ describe("TestOutputCleaner", () => {
     const r = cleaner.clean(text, TEST_OUT);
     assert.equal(r.changes[0]?.count, 2);
   });
+
+  it("collapses pytest, Go, and Cargo passing tests", () => {
+    const samples = [
+      "tests/test_api.py::test_create PASSED [ 33%]\ntests/test_api.py::test_read PASSED [ 66%]\ntests/test_api.py::test_delete PASSED [100%]\n=== 3 passed in 0.03s ===",
+      "=== RUN   TestCreate\n--- PASS: TestCreate (0.00s)\n=== RUN   TestRead\n--- PASS: TestRead (0.00s)\n=== RUN   TestDelete\n--- PASS: TestDelete (0.00s)\nPASS\nok example/api 0.003s",
+      "test tests::create ... ok\ntest tests::read ... ok\ntest tests::delete ... ok\ntest result: ok. 3 passed; 0 failed",
+    ];
+    for (const text of samples) {
+      const result = cleaner.clean(text, TEST_OUT);
+      assert.match(result.text, /✓ 3 test cases passed/);
+      assert.equal(result.changes[0]?.count, 1);
+    }
+  });
+
+  it("preserves complete pytest, Go, and Cargo failure reports", () => {
+    const samples = [
+      "tests/test_api.py::test_create PASSED [ 50%]\ntests/test_api.py::test_delete FAILED [100%]\nE assert 1 == 2\n=== 1 failed, 1 passed ===",
+      "--- PASS: TestCreate (0.00s)\n--- FAIL: TestDelete (0.01s)\n    api_test.go:42: got 1, want 2\nFAIL",
+      "test tests::create ... ok\ntest tests::delete ... FAILED\nassertion failed: left == right\ntest result: FAILED. 1 passed; 1 failed",
+    ];
+    for (const text of samples) assert.equal(cleaner.clean(text, TEST_OUT).text, text);
+  });
 });

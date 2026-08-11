@@ -1,0 +1,10 @@
+=== RUN   TestCreateUser
+--- PASS: TestCreateUser (0.00s)
+=== RUN   TestReadUser
+--- PASS: TestReadUser (0.00s)
+=== RUN   TestUpdateUser
+--- PASS: TestUpdateUser (0.00s)
+=== RUN   TestDeleteUser
+--- PASS: TestDeleteUser (0.00s)
+PASS
+ok  example.com/project/api  0.004s

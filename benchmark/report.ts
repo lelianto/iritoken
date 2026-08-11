@@ -43,7 +43,8 @@ export function renderMarkdown(results: FixtureResult[]): string {
     "",
     "Generated automatically by `npm run benchmark`. Do not edit by hand.",
     "",
-    "> Token counts use the package's documented `char/4` heuristic and are ",
+    "> Token counts use the package's documented heuristic (the average of",
+    "> `characters / 4` and a word-like count) and are",
     "> labelled estimates. They are NOT exact model token counts.",
     "",
   ];

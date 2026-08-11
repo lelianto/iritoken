@@ -1,6 +1,6 @@
 {
   "name": "iritoken",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Deterministic token optimization for AI coding context. Removes low-value tokens without removing useful information — no LLM required.",
   "keywords": [
     "tokens",
@@ -53,7 +53,7 @@
   "files": [
     "dist",
     "docs",
-    "assets",
+    "assets/logo.svg",
     "README.md",
     "CHANGELOG.md",
     "SECURITY.md",
@@ -68,6 +68,8 @@
     "typecheck": "tsc -p tsconfig.check.json",
     "pretest": "npm run build",
     "test": "tsx --test test/*.test.ts",
+    "test:security": "npm run build && tsx --test test/security.test.ts test/ansi.test.ts test/cli.test.ts test/enhancements.test.ts",
+    "test:real-cases": "npm run benchmark:corpus && npm run benchmark:detection && npm run benchmark:semantic",
     "benchmark": "tsx benchmark/run.ts",
     "benchmark:quality": "tsx benchmark/quality.ts",
     "benchmark:perf": "tsx benchmark/performance.ts",
@@ -80,8 +82,8 @@
     "benchmark:verify": "npm run benchmark -- safe && npm run benchmark -- balanced && npm run benchmark:quality && npm run benchmark:corpus && npm run benchmark:detection && npm run benchmark:semantic && npm run benchmark:perf && npm run benchmark:stream && npm run report",
     "pack:smoke": "npm run build && node scripts/pack-smoke.mjs",
     "report": "tsx benchmark/report.ts",
-    "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run pack:smoke",
-    "release:check": "npm run prepublishOnly && npm run benchmark:corpus && npm publish --dry-run --ignore-scripts"
+    "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run test:security && npm run test:real-cases && npm run pack:smoke",
+    "release:check": "npm run prepublishOnly && npm pack --dry-run --ignore-scripts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

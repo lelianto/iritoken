@@ -16,6 +16,9 @@ const labelled = [
   ["repeated-instructions.txt", false],
   ["mixed-agent-context.txt", false],
   ["jest-output.txt", false],
+  ["pytest-passing.txt", false],
+  ["go-test-passing.txt", false],
+  ["cargo-test-passing.txt", false],
 ] as const;
 
 let truePositive = 0;

@@ -30,3 +30,27 @@ model.
 These controls reduce local-file and terminal-injection risk; callers remain
 responsible for choosing trusted paths and applying stricter sandboxing where
 untrusted users can influence filesystem layout concurrently.
+
+## Mandatory release gates
+
+Every package release must pass both of these commands:
+
+```bash
+npm run test:security
+npm run test:real-cases
+```
+
+`test:security` exercises library and stream resource limits, terminal-control
+and clipboard-sequence removal, CLI input boundaries, symlink and non-regular
+path rejection, hard-link alias protection, and atomic output behavior.
+
+`test:real-cases` runs the committed corpus across all presets, the labelled
+detection set, and executable semantic invariants. It fails on missing required
+facts, occurrence-count changes, forbidden leftover noise, expansion,
+non-idempotence, detection regressions, or unexpected cleaner transformations.
+
+Both commands are part of `prepublishOnly`, so the normal npm publish lifecycle
+cannot proceed when either gate fails. They also run as separate CI jobs and as
+named steps in the trusted release workflow. Deliberately bypassing npm
+lifecycle scripts with `--ignore-scripts` is outside the supported release
+process.
