@@ -83,6 +83,32 @@ describe("classify content type", () => {
     assert.equal(found.type, "generic-terminal-output");
   });
 
+  it("assigns high confidence only with repeated terminal evidence", () => {
+    const timestamped = [
+      "[14:22:01] connecting to queue",
+      "[14:22:02] processing batch",
+      "[14:22:03] processing batch",
+      "[14:22:04] complete",
+    ].join("\n");
+    assert.deepEqual(classify(timestamped), {
+      type: "generic-terminal-output",
+      confidence: "high",
+    });
+  });
+
+  it("does not promote repeated source code or instructions", () => {
+    const source = [
+      "export const values = [",
+      '  "same-value",',
+      '  "same-value",',
+      '  "same-value",',
+      "];",
+    ].join("\n");
+    const instructions = "repeat this instruction exactly\n".repeat(3).trimEnd();
+    assert.notEqual(classify(source).confidence, "high");
+    assert.notEqual(classify(instructions).type, "generic-terminal-output");
+  });
+
   it("handles unicode test output", () => {
     const found = classify(`✓ héllo 漢字 test passes\n✓ another one passes\n✓ third passes\n✓ fourth passes\nTests  4 passed (4)`);
     assert.equal(found.type, "test-output");

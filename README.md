@@ -456,6 +456,7 @@ npm run lint
 npm run typecheck
 npm test
 npm run benchmark:verify
+npm run benchmark:detection
 npm run pack:smoke
 npm run release:check
 ```

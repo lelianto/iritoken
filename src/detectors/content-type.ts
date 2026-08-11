@@ -17,6 +17,8 @@ const STACK_HEADER = /\b(Error|Exception|Traceback)\b/;
 const CODE_LINE =
   /^\s*(?:import\s|export\s|const\s|let\s|var\s|function\s|class\s|interface\s|type\s|return\s|if\s*\(|for\s*\(|while\s*\(|switch\s*\(|case\s|=>)/;
 const ANSI_ESCAPE = /\x1b\[/;
+const TERMINAL_LINE =
+  /^(?:\[\d{2}:\d{2}:\d{2}(?:\.\d+)?\]|#\d+\s|npm\s+(?:WARN|warn|ERR!|error|notice)\b|Level\s+\d+\s+progress:|(?:added|removed|changed)\s+\d+\s+packages?\b|(?:up to date|found\s+\d+\s+vulnerabilit))/;
 
 function classifyConfidence(score: number, strong: number): Confidence {
   if (score >= strong) return "high";
@@ -39,6 +41,7 @@ export function classify(text: string): ContentDetection {
   let stackHeaders = 0;
   let codeLines = 0;
   let ansiLines = 0;
+  let terminalLines = 0;
 
   for (const line of lines) {
     if (TEST_LINE.test(line) || TEST_LINE_PLAIN.test(line)) testLines += 1;
@@ -47,6 +50,7 @@ export function classify(text: string): ContentDetection {
     if (STACK_HEADER.test(line)) stackHeaders += 1;
     if (CODE_LINE.test(line)) codeLines += 1;
     if (ANSI_ESCAPE.test(line)) ansiLines += 1;
+    if (TERMINAL_LINE.test(line)) terminalLines += 1;
   }
 
   const shortInput = size < 200 && lineCount <= 3;
@@ -87,6 +91,13 @@ export function classify(text: string): ContentDetection {
 
   // Terminal-produced output (including ANSI) is the safe default.
   if (ansiLines > 0) {
+    return { type: "generic-terminal-output", confidence: "high" };
+  }
+
+  // Require several independently terminal-shaped lines. This recovers
+  // confidence for plain-text logs without treating a single command-like
+  // sentence as evidence that arbitrary prose or source is terminal output.
+  if (terminalLines >= 3 && terminalLines / lineCount >= 0.25) {
     return { type: "generic-terminal-output", confidence: "high" };
   }
 
