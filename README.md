@@ -202,7 +202,7 @@ The result contains optimized text and character statistics:
 
 | Preset | Behavior | Recommended for |
 | --- | --- | --- |
-| `safe` | ANSI, whitespace, and consecutive exact duplicates | Default and unknown input |
+| `safe` | ANSI, whitespace, and consecutive exact duplicates in confidently detected terminal output | Default and unknown input |
 | `balanced` | `safe` plus conservative stack and test-output cleanup | Coding-agent and CI context |
 | `aggressive` | `balanced` plus repeated identical multiline blocks | Opt-in repetitive terminal output |
 

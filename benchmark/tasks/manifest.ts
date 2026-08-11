@@ -17,6 +17,8 @@ export interface TaskVerification {
   mustContain: string[];
   /** Noise markers whose removal is REQUIRED (optional). */
   mustNotContain?: string[];
+  /** Exact occurrence counts that carry meaning and must be preserved. */
+  mustPreserveOccurrences?: Record<string, number>;
 }
 
 export interface BenchmarkTask {
@@ -29,6 +31,26 @@ export interface BenchmarkTask {
 }
 
 export const TASKS: BenchmarkTask[] = [
+  {
+    name: "source-code-repetition-preservation",
+    fixture: "repeated-source-code.txt",
+    description: "Preserve repeated source-code entries exactly instead of converting them into prose markers.",
+    verification: {
+      mustContain: ["export const values = [", "];"],
+      mustNotContain: ["[repeated"],
+      mustPreserveOccurrences: { '  "same-value",': 3 },
+    },
+  },
+  {
+    name: "instruction-repetition-preservation",
+    fixture: "repeated-instructions.txt",
+    description: "Preserve repeated natural-language instructions because repetition may be intentional.",
+    verification: {
+      mustContain: ["repeat this instruction exactly"],
+      mustNotContain: ["[repeated"],
+      mustPreserveOccurrences: { "repeat this instruction exactly": 3 },
+    },
+  },
   {
     name: "npm-error-diagnosis",
     fixture: "npm-install.txt",

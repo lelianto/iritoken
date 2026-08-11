@@ -71,6 +71,22 @@ describe("optimize pipeline", () => {
     assert.equal(r.stats.transformations["test-output"], undefined);
   });
 
+  it("preserves repeated source-code lines and unknown instructions", () => {
+    const source = [
+      "export const values = [",
+      '  "same-value",',
+      '  "same-value",',
+      '  "same-value",',
+      "];",
+    ].join("\n");
+    const instruction = "repeat this instruction exactly\n".repeat(3).trimEnd();
+
+    for (const preset of ["safe", "balanced", "aggressive"] as const) {
+      assert.equal(optimize(source, { preset }).text, source);
+      assert.equal(optimize(instruction, { preset }).text, instruction);
+    }
+  });
+
   it("balanced preset preserves passing-test context in failure reports", () => {
     const r = optimize(VITEST, { preset: "balanced" });
     assert.equal(r.stats.transformations["test-output"], undefined);

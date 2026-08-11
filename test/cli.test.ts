@@ -75,7 +75,10 @@ describe("iritoken CLI (built)", () => {
 
   it("--explain explains the changes", () => {
     const file = join(dir, "explain.log");
-    writeFileSync(file, "Connecting...\nConnecting...\nConnecting...\nConnection failed\n");
+    writeFileSync(
+      file,
+      "\x1b[36mConnecting...\x1b[0m\n\x1b[36mConnecting...\x1b[0m\n\x1b[36mConnecting...\x1b[0m\nConnection failed\n",
+    );
     const r = runCli([file, "--explain"]);
     assert.equal(r.status, 0);
     assert.ok(r.stdout.includes("iritoken Analysis"));

@@ -15,11 +15,23 @@ for (const task of TASKS) {
     const result = optimize(original, { preset });
     const second = optimize(result.text, { preset });
     const missing = task.verification.mustContain.filter((fact) => !result.text.includes(fact));
+    const occurrenceMismatches = Object.entries(
+      task.verification.mustPreserveOccurrences ?? {},
+    ).filter(([value, expected]) => result.text.split(value).length - 1 !== expected);
+    const forbidden = (task.verification.mustNotContain ?? []).filter((value) =>
+      result.text.includes(value),
+    );
     const expanded = result.text.length > original.length;
     const unstable = second.text !== result.text;
-    if (missing.length > 0 || expanded || unstable) {
+    if (
+      missing.length > 0 ||
+      occurrenceMismatches.length > 0 ||
+      forbidden.length > 0 ||
+      expanded ||
+      unstable
+    ) {
       failed = true;
-      process.stderr.write(`${task.name}/${preset}: missing=${missing.join("|") || "none"} expanded=${expanded} idempotent=${!unstable}\n`);
+      process.stderr.write(`${task.name}/${preset}: missing=${missing.join("|") || "none"} occurrence-mismatches=${occurrenceMismatches.map(([value]) => value).join("|") || "none"} forbidden=${forbidden.join("|") || "none"} expanded=${expanded} idempotent=${!unstable}\n`);
     }
   }
 }

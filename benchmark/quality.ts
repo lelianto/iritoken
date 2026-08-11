@@ -31,6 +31,7 @@ export interface Verdict {
   success: boolean;
   missingFacts: string[];
   leftoverNoise: string[];
+  occurrenceMismatches: string[];
   inputTokens: number;
 }
 
@@ -38,11 +39,21 @@ export function verifyTask(task: BenchmarkTask, context: string): Verdict {
   const missingFacts = task.verification.mustContain.filter((fact) => !context.includes(fact));
   const leftoverNoise =
     (task.verification.mustNotContain ?? []).filter((noise) => context.includes(noise));
+  const occurrenceMismatches = Object.entries(
+    task.verification.mustPreserveOccurrences ?? {},
+  ).flatMap(([value, expected]) => {
+    const actual = context.split(value).length - 1;
+    return actual === expected ? [] : [`${JSON.stringify(value)}: expected ${expected}, got ${actual}`];
+  });
   return {
     task: task.name,
-    success: missingFacts.length === 0 && leftoverNoise.length === 0,
+    success:
+      missingFacts.length === 0 &&
+      leftoverNoise.length === 0 &&
+      occurrenceMismatches.length === 0,
     missingFacts,
     leftoverNoise,
+    occurrenceMismatches,
     inputTokens: estimateTokens(context),
   };
 }

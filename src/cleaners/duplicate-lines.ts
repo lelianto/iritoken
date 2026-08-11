@@ -16,6 +16,8 @@ import type { Cleaner, CleanerResult, ContentDetection } from "../types.js";
  *   Connection failed
  *
  * Rules:
+ * - Only confidently identified generic terminal output is eligible. Source
+ *   code, prose, instructions, and ambiguous text preserve exact repetition.
  * - Only EXACT, CONSECUTIVE duplicates are collapsed. Identical lines in
  *   unrelated locations in the output are left alone.
  * - Empty lines are never collapsed here (the whitespace cleaner owns them).
@@ -30,7 +32,13 @@ export class DuplicateLinesCleaner implements Cleaner {
   readonly id = "duplicate-lines";
   readonly description = "Collapse runs of consecutive duplicate lines";
 
-  clean(text: string, _detection: ContentDetection): CleanerResult {
+  clean(text: string, detection: ContentDetection): CleanerResult {
+    if (
+      detection.type !== "generic-terminal-output" ||
+      detection.confidence !== "high"
+    ) {
+      return { text, changes: [], confidence: "low" };
+    }
     if (!text.includes("\n")) {
       return { text, changes: [], confidence: "high" };
     }

@@ -4,6 +4,12 @@ import { DuplicateLinesCleaner } from "../src/cleaners/duplicate-lines.js";
 import type { ContentDetection } from "../src/types.js";
 
 const TERMINAL: ContentDetection = { type: "generic-terminal-output", confidence: "high" };
+const AMBIGUOUS_TERMINAL: ContentDetection = {
+  type: "generic-terminal-output",
+  confidence: "medium",
+};
+const SOURCE: ContentDetection = { type: "source-code", confidence: "high" };
+const UNKNOWN: ContentDetection = { type: "unknown", confidence: "high" };
 
 const cleaner = new DuplicateLinesCleaner();
 
@@ -69,6 +75,23 @@ describe("DuplicateLinesCleaner", () => {
   it("preserves repeated high-signal warning and error lines", () => {
     const text = "warning: retrying\nwarning: retrying\nwarning: retrying\nerror: lost\nerror: lost\nerror: lost";
     assert.equal(cleaner.clean(text, TERMINAL).text, text);
+  });
+
+  it("preserves repeated lines in source code", () => {
+    const text = [
+      "export const values = [",
+      '  "same-value",',
+      '  "same-value",',
+      '  "same-value",',
+      "];",
+    ].join("\n");
+    assert.equal(cleaner.clean(text, SOURCE).text, text);
+  });
+
+  it("preserves repeated instructions and ambiguous text", () => {
+    const instruction = "repeat this instruction exactly\n".repeat(3).trimEnd();
+    assert.equal(cleaner.clean(instruction, UNKNOWN).text, instruction);
+    assert.equal(cleaner.clean(instruction, AMBIGUOUS_TERMINAL).text, instruction);
   });
 
   it("handles unicode lines", () => {
