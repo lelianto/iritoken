@@ -1,0 +1,53 @@
+src/services/auth.service.ts:41:16 - error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+
+  const token = config.get("JWT_SECRET");
+                 ~~~~~~~~~~~~~~~~~~~~~~
+
+src/services/auth.service.ts:57:9 - error TS2532: Object is possibly 'undefined'.
+
+57    const issuer = headers.authorization.split(" ")[1];
+           ~~~~~~~
+
+src/routes/users.route.ts:12:3 - error TS2304: Cannot find name 'Router'.
+12   router.get("/", getUsers);
+     ~~~~~~
+
+src/routes/users.route.ts:19:3 - error TS2304: Cannot find name 'Router'.
+19   router.post("/", createUser);
+     ~~~~~~
+
+src/models/user.model.ts:33:11 - error TS7006: Parameter 'doc' implicitly has an 'any' type.
+33     const meta = new Parse(doc, { raw: true });
+             ~~~~
+
+src/models/user.model.ts:41:11 - error TS7006: Parameter 'input' implicitly has an 'any' type.
+41     await repo.save(input);
+             ~~~~~
+
+src/models/user.model.ts:52:22 - error TS18048: 'this.refreshToken' is possibly 'undefined'.
+52     if (!this.refreshToken) throw new Error("missing token");
+                        ~~~~~~~~~~~
+
+src/utils/jwt.ts:9:5 - error TS2322: Type 'string' is not assignable to type 'number | undefined'.
+9     maxAge: process.env.EXPIRES_IN,
+       ~~~~~~
+
+src/utils/jwt.ts:15:5 - error TS2769: No overload matches this call.
+15     sign(payload, secret, opts);
+       ~~~~
+
+src/services/auth.service.ts:41:16 - error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+
+  const token = config.get("JWT_SECRET");
+                 ~~~~~~~~~~~~~~~~~~~~~~
+
+src/services/auth.service.ts:57:9 - error TS2532: Object is possibly 'undefined'.
+
+57    const issuer = headers.authorization.split(" ")[1];
+           ~~~~~~~
+
+Found 9 errors in 4 files.
+
+  Code=TS2345 TS2403 TS2339 TS7006 TS18048 TS2532 TS2769 TS2304

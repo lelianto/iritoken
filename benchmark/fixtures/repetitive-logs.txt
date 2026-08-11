@@ -1,0 +1,38 @@
+[14:22:01] connecting to message queue at localhost:5672
+[14:22:01] connecting to message queue at localhost:5672
+[14:22:01] connecting to message queue at localhost:5672
+[14:22:01] connecting to message queue at localhost:5672
+[14:22:04] connection established, prefetch=64
+[14:22:04] processing task batch (id=7f3a, count=12)
+[14:22:04] processing task batch (id=7f3a, count=12)
+[14:22:04] processing task batch (id=7f3a, count=12)
+[14:22:04] processing task batch (id=7f3a, count=12)
+[14:22:04] processing task batch (id=7f3a, count=12)
+[14:22:04] processing task batch (id=7f3a, count=12)
+[14:22:05] warning: task 3 exceeded 250ms budget
+[14:22:05] warning: task 3 exceeded 250ms budget
+[14:22:05] warning: task 3 exceeded 250ms budget
+[14:22:05] warning: task 3 exceeded 250ms budget
+[14:22:05] warning: task 3 exceeded 250ms budget
+[14:22:06] retrying publish to dead-letter exchange (attempt 1)
+[14:22:06] retrying publish to dead-letter exchange (attempt 1)
+[14:22:06] retrying publish to dead-letter exchange (attempt 1)
+[14:22:06] retrying publish to dead-letter exchange (attempt 1)
+[14:22:08] ok publish acknowledged (exchange=dlx, routing=err.tasks)
+[14:22:08] ok publish acknowledged (exchange=dlx, routing=err.tasks)
+[14:22:08] ok publish acknowledged (exchange=dlx, routing=err.tasks)
+[14:22:09] consumer closed channel: connection lost (code=320)
+[14:22:09] consumer closed channel: connection lost (code=320)
+[14:22:09] consumer closed channel: connection lost (code=320)
+[14:22:09] consumer closed channel: connection lost (code=320)
+[14:22:09] consumer closed channel: connection lost (code=320)
+[14:22:09] consumer closed channel: connection lost (code=320)
+[14:22:10] reconnecting with backoff 120ms
+[14:22:10] reconnecting with backoff 120ms
+[14:22:10] reconnecting with backoff 120ms
+[14:22:10] reconnecting with backoff 120ms
+[14:22:10] reconnecting with backoff 120ms
+[14:22:12] status: connected, last error at 14:22:09
+[14:22:12] status: connected, last error at 14:22:09
+[14:22:12] status: connected, last error at 14:22:09
+[14:22:12] status: connected, last error at 14:22:09

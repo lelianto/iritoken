@@ -1,0 +1,40 @@
+PASS  src/sum.test.ts (6.2s)
+  ✓ adds 1 + 2 to equal 3 (4 ms)
+  ✓ adds large numbers (2 ms)
+  ✓ handles negative numbers (3 ms)
+PASS  src/join.test.ts (1.5s)
+  ✓ joins arrays (2 ms)
+  ✓ joins strings (1 ms)
+PASS  src/filter.test.ts (0.9s)
+  ✓ filters by predicate (3 ms)
+  ✓ returns empty for no matches (1 ms)
+PASS  src/map.test.ts (1.1s)
+  ✓ maps over values (2 ms)
+  ✓ preserves order (1 ms)
+PASS  src/reduce.test.ts (2.4s)
+  ✓ reduces to a single value (2 ms)
+  ✓ handles empty arrays (1 ms)
+FAIL  src/validate.test.ts (1.8s)
+  ✕ throws on invalid email (5 ms)
+  ● validate › throws on invalid email
+
+    expect(received).toEqual(expected)
+
+    Expected: [Error: invalid email]
+    Received: [Error: missing at symbol]
+
+      23 |      expect(() => validate(email)).toThrow(
+      24 |        new Error('invalid email')
+      25 |      );
+    at Object.<anonymous> (src/validate.test.ts:23:5)
+
+PASS  src/format.test.ts (1.3s)
+  ✓ formats dates (2 ms)
+  ✓ formats currency (3 ms)
+  ✓ handles timezones (2 ms)
+
+Test Suites: 7 passed, 1 failed, 8 total
+Tests:       14 passed, 1 failed, 15 total
+Snapshots:   4 passed, 4 total
+Time:        8.2s
+Ran all test suites.

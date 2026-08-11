@@ -1,0 +1,57 @@
+npm install
+
+added 143 packages, and audited 144 packages in 6s
+
+51 packages are looking for funding
+  run `npm fund` for details
+
+1 moderate severity vulnerability
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+
+up to date, audited 144 packages in 2s
+
+found 0 vulnerabilities
+
+added 12 packages
+removed 8 packages
+changed 34 packages in 4s
+
+21 packages are looking for funding
+  run `npm fund` for details
+
+added 1 package in 673ms
+
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key, which is an additional feature on top of lru-cache.
+npm warn deprecated rimraf@3.0.2: Rimraf versions prior to 4 are not longer supported
+npm warn deprecated npmlog@5.0.1: This package is no longer supported.
+npm warn deprecated tar@2.2.2: This version of tar is no longer supported, and will not receive security updates. Please upgrade asap.
+
+npm WARN config init.author.email Use --init-author-email for an email, not in the config definition.
+npm WARN config init.author.name Use --init-author-name for a name, not in the config definition.
+
+Level 1 progress: reify
+Level 1 progress: reify
+Level 1 progress: reify
+Level 1 progress: reify
+Level 1 progress: reify
+Level 2 progress: audit
+Level 2 progress: audit
+Level 2 progress: audit
+Level 2 progress: audit
+Level 3 progress: idealTree:defaults
+Level 3 progress: idealTree:defaults
+Level 3 progress: idealTree:defaults
+Level 4 progress: build:node_modules
+Level 4 progress: build:node_modules
+npm ERR! code ELIFECYCLE
+npm ERR! errno 1
+npm ERR! postinstall: `node scripts/build.js`
+npm ERR! Exit status 1
+npm ERR!
+npm ERR! Failed at the @vendor/pkg@1.4.2 postinstall script.
+npm ERR! This is probably not a problem with npm. There is likely additional logging output above.
+npm ERR! A complete log of this run can be found in: /Users/dev/.npm/_logs/2026-08-10T09_12_44_410Z-debug-0.log

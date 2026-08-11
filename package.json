@@ -1,0 +1,71 @@
+{
+  "name": "tokenslim",
+  "version": "0.1.0",
+  "description": "Deterministic token optimization for AI coding context. Removes low-value tokens without removing useful information — no LLM required.",
+  "keywords": [
+    "tokens",
+    "llm",
+    "context",
+    "tokenizer",
+    "optimization",
+    "logs",
+    "stack-trace",
+    "test-output",
+    "ansi",
+    "cli"
+  ],
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/lelianto/iritoken",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lelianto/iritoken.git"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "tokenslim": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.check.json",
+    "pretest": "npm run build",
+    "test": "tsx --test test/*.test.ts",
+    "benchmark": "tsx benchmark/run.ts",
+    "benchmark:quality": "tsx benchmark/quality.ts",
+    "benchmark:perf": "tsx benchmark/performance.ts",
+    "benchmark:groq": "tsx benchmark/groq-live.ts",
+    "benchmark:deepseek": "tsx benchmark/deepseek-live.ts",
+    "benchmark:verify": "npm run benchmark -- safe && npm run benchmark -- balanced && npm run benchmark:quality && npm run benchmark:perf && npm run report",
+    "pack:smoke": "npm run build && node scripts/pack-smoke.mjs",
+    "report": "tsx benchmark/report.ts",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run pack:smoke"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^20.14.0",
+    "eslint": "^9.39.5",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.67.0"
+  }
+}

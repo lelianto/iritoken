@@ -1,0 +1,51 @@
+$ npm run build
+
+> build
+> tsc -p tsconfig.json
+
+src/utils/helpers.ts:12:5 - error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+
+12    const total = sum(items, options.offset);
+       ~~~~~~~~~~
+
+$ typecheck failed (exit code 2)
+
+$ npx vitest run 2>&1
+
+ ✓ src/sum.test.ts (1) 3ms
+ ✓ src/join.test.ts (2) 4ms
+ ✗ src/validate.test.ts (1) 6ms
+ ❯ validate › rejects empty string
+
+    expect(received).toMatch(expected)
+
+    Expected: /^.{3,}$/
+    Received: ""
+
+   at Object.<anonymous> (src/validate.test.ts:19:14)
+
+ Test Files  2 passed | 1 failed (3)
+      Tests  3 passed | 1 failed (4)
+
+$ Fix the failing test, then re-run:
+
+$ git status
+On branch fix/validate-empty
+Your branch is up to date with 'origin/fix/validate-empty'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+        modified:   src/utils/helpers.ts
+
+$ node -e "const cfg = require('./tsconfig.json'); console.log(cfg.compilerOptions.target)"
+
+lib version 5.5.4
+language service version 5.5.4
+unit: 2
+languageId: typescript
+delta: 3
+kindRegionInfo: 1
+item index: 0
+length: 7
+start: 123
+languageVersion: es2022

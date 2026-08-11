@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.log
+.benchmark-results/
+benchmark/results/*.json
+coverage/
+.DS_Store
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.env.local
