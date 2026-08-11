@@ -390,7 +390,7 @@ export async function mainImpl(argv: string[]): Promise<number> {
     return 0;
   }
   if (options.version) {
-    let version = "0.2.0";
+    let version = "0.2.1";
     try {
       const pkg = require("../../package.json") as { version: string };
       version = pkg.version;

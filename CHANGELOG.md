@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 - 2026-08-11
+
+- Replace the not-yet-indexed Scorecard viewer target with the repository's
+  working Scorecard workflow page.
+- Remove the Socket badge because its public package endpoint returns HTTP 403.
+
 ## 0.2.0 - 2026-08-11
 
 - Add a memory-bounded terminal transform with UTF-8, control-sequence,

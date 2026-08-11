@@ -1,6 +1,6 @@
 {
   "name": "iritoken",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Deterministic token optimization for AI coding context. Removes low-value tokens without removing useful information — no LLM required.",
   "keywords": [
     "tokens",

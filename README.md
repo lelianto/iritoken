@@ -13,8 +13,7 @@
   <p>
     <a href="https://www.npmjs.com/package/iritoken"><img src="https://img.shields.io/npm/v/iritoken?style=flat-square&color=2563eb" alt="npm version" /></a>
     <a href="https://github.com/lelianto/iritoken/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/lelianto/iritoken/ci.yml?branch=main&style=flat-square&label=CI" alt="CI status" /></a>
-    <a href="https://scorecard.dev/viewer/?uri=github.com/lelianto/iritoken"><img src="https://api.scorecard.dev/projects/github.com/lelianto/iritoken/badge" alt="OpenSSF Scorecard" /></a>
-    <a href="https://badge.socket.dev/npm/package/iritoken/0.2.0"><img src="https://badge.socket.dev/npm/package/iritoken/0.2.0" alt="Socket security score" /></a>
+    <a href="https://github.com/lelianto/iritoken/actions/workflows/scorecard.yml"><img src="https://api.scorecard.dev/projects/github.com/lelianto/iritoken/badge" alt="OpenSSF Scorecard" /></a>
     <a href="https://bundlephobia.com/package/iritoken"><img src="https://img.shields.io/bundlephobia/minzip/iritoken?style=flat-square" alt="minified and gzipped bundle size" /></a>
     <a href="https://www.npmjs.com/package/iritoken"><img src="https://img.shields.io/node/v/iritoken?style=flat-square&color=339933" alt="supported Node.js version" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/npm/l/iritoken?style=flat-square&color=7c3aed" alt="npm license" /></a>

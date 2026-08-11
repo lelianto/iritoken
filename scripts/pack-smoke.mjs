@@ -27,7 +27,7 @@ try {
 
   const bin = join(temp, "node_modules", ".bin", "iritoken");
   assert.ok(existsSync(bin));
-  assert.match(execFileSync(bin, ["--version"], { cwd: temp, encoding: "utf8" }), /^iritoken 0\.2\.0/);
+  assert.match(execFileSync(bin, ["--version"], { cwd: temp, encoding: "utf8" }), /^iritoken 0\.2\.1/);
   const installed = JSON.parse(readFileSync(join(temp, "node_modules", "iritoken", "package.json"), "utf8"));
   assert.equal(installed.dependencies, undefined, "published package gained runtime dependencies");
   process.stdout.write(`Pack smoke test passed: ${filename}\n`);
