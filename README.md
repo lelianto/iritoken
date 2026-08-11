@@ -311,6 +311,22 @@ The transform honors backpressure and enforces a byte limit. It buffers input
 up to that limit before emitting because content detection requires the full
 context to remain exactly equivalent to `optimize()`.
 
+For input already known to be terminal output, use the memory-bounded variant:
+
+```ts
+import { createTerminalOptimizeTransform } from "iritoken/stream";
+
+await pipeline(
+  createReadStream("build.log"),
+  createTerminalOptimizeTransform({ maxLineBytes: 1024 * 1024 }),
+  createWriteStream("context.txt")
+);
+```
+
+It incrementally removes ANSI noise, normalizes terminal whitespace, and
+collapses consecutive duplicate lines. It deliberately skips global detection
+and the balanced/aggressive cleaners.
+
 See [the integration guide](docs/integrations.md) for additional examples.
 
 ## How it works

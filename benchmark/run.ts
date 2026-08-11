@@ -13,6 +13,7 @@ import { readdirSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { optimize } from "../src/pipeline/optimize.js";
+import { TASKS } from "./tasks/manifest.js";
 import { estimateTokens } from "../src/token/counter.js";
 import { percentage } from "../src/utils.js";
 import type { PresetName } from "../src/types.js";
@@ -23,6 +24,7 @@ const RESULTS_DIR = join(ROOT, "results");
 
 export interface FixtureResult {
   fixture: string;
+  workload: string;
   preset: PresetName;
   detectionType: string;
   detectionConfidence: string;
@@ -43,6 +45,7 @@ export function loadFixtures(dir = FIXTURES_DIR): string[] {
 }
 
 export function runCompression(preset: PresetName, fixtures: string[]): FixtureResult[] {
+  const workloads = new Map(TASKS.map((task) => [task.fixture, task.workload]));
   const results: FixtureResult[] = [];
   for (const fixture of fixtures) {
     const input = readFileSync(join(FIXTURES_DIR, fixture), "utf8");
@@ -52,6 +55,7 @@ export function runCompression(preset: PresetName, fixtures: string[]): FixtureR
     const optimizedTokens = estimateTokens(once.text);
     results.push({
       fixture: fixture.replace(/\.txt$/, ""),
+      workload: workloads.get(fixture) ?? "unclassified",
       preset,
       detectionType: once.stats.detection.type,
       detectionConfidence: once.stats.detection.confidence,
@@ -93,7 +97,14 @@ const results = runCompression(preset, fixtureList);
 
 mkdirSync(RESULTS_DIR, { recursive: true });
 const outPath = join(RESULTS_DIR, `compression-${preset}.json`);
-writeFileSync(outPath, JSON.stringify(results, null, 2), "utf8");
+writeFileSync(outPath, JSON.stringify({
+  schemaVersion: 2,
+  methodologyVersion: "semantic-gates-v1",
+  generatedAt: new Date().toISOString(),
+  runtime: { node: process.version, platform: process.platform, arch: process.arch },
+  preset,
+  results,
+}, null, 2), "utf8");
 
 if (!results.every((r) => r.idempotent)) {
   process.stderr.write("Error: one or more fixtures are not idempotent under optimize().\n");

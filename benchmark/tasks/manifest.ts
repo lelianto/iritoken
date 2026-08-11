@@ -24,6 +24,7 @@ export interface TaskVerification {
 export interface BenchmarkTask {
   name: string;
   fixture: string;
+  workload: string;
   description: string;
   verification: TaskVerification;
   /** Optional pricing (USD per 1k tokens) used for cost-per-success. */
@@ -34,6 +35,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "semantic-whitespace-preservation",
     fixture: "semantic-whitespace.txt",
+    workload: "structured-text",
     description: "Preserve Markdown hard breaks and blank lines inside a YAML block scalar.",
     verification: {
       mustContain: [
@@ -46,6 +48,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "source-code-repetition-preservation",
     fixture: "repeated-source-code.txt",
+    workload: "source-code",
     description: "Preserve repeated source-code entries exactly instead of converting them into prose markers.",
     verification: {
       mustContain: ["export const values = [", "];"],
@@ -56,6 +59,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "instruction-repetition-preservation",
     fixture: "repeated-instructions.txt",
+    workload: "instructions",
     description: "Preserve repeated natural-language instructions because repetition may be intentional.",
     verification: {
       mustContain: ["repeat this instruction exactly"],
@@ -66,6 +70,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "npm-error-diagnosis",
     fixture: "npm-install.txt",
+    workload: "package-manager",
     description: "Report the lifecycle error code, failing script, exact package version, and command that failed.",
     verification: {
       mustContain: [
@@ -79,6 +84,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "tsc-fix-list",
     fixture: "tsc-errors.txt",
+    workload: "compiler-output",
     description: "List every failing file and the code of each TypeScript error.",
     verification: {
       mustContain: [
@@ -95,6 +101,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "vitest-failure-analysis",
     fixture: "vitest-output.txt",
+    workload: "test-output",
     description: "Identify the failed test, serialized error code, relevant source path, and final test summary.",
     verification: {
       mustContain: [
@@ -108,6 +115,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "jest-failure-analysis",
     fixture: "jest-output.txt",
+    workload: "test-output",
     description: "Identify the failed test and quote its expected value, received value, and source location.",
     verification: {
       mustContain: [
@@ -121,6 +129,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "stack-understanding",
     fixture: "stack-trace.txt",
+    workload: "stack-trace",
     description: "List every distinct runtime/root error and quote the relevant origin or evidence for each.",
     verification: {
       mustContain: [
@@ -134,6 +143,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "log-forensics",
     fixture: "repetitive-logs.txt",
+    workload: "application-log",
     description: "Report the connection target/configuration, lifecycle, final error code, and dead-letter outcome.",
     verification: {
       mustContain: [
@@ -147,6 +157,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "agent-context-understanding",
     fixture: "mixed-agent-context.txt",
+    workload: "mixed-context",
     description: "Report the build source location, failed test, working branch, and final test summary.",
     verification: {
       mustContain: [
@@ -160,6 +171,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "docker-build-diagnosis",
     fixture: "docker-build.txt",
+    workload: "build-output",
     description: "Identify the failing build stage, source diagnostic, Dockerfile line, and exit code.",
     verification: {
       mustContain: ["builder 5/6", "src/server.ts(42,18)", "Dockerfile:18", "exit code: 2"],
@@ -168,6 +180,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "kubernetes-incident",
     fixture: "kubernetes-events.txt",
+    workload: "tabular-output",
     description: "Identify the pod, image, health failure, and missing secret.",
     verification: {
       mustContain: ["pod/api-7c9d", "api:2.4.1", "statuscode: 503", "api-config"],
@@ -176,6 +189,7 @@ export const TASKS: BenchmarkTask[] = [
   {
     name: "python-root-cause",
     fixture: "python-traceback.txt",
+    workload: "stack-trace",
     description: "Identify both exceptions, origin, job, customer, and retry count.",
     verification: {
       mustContain: ["KeyError: 'account'", "/app/client.py", "invoice-4821", "customer-91", "5 attempts"],

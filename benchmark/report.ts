@@ -18,8 +18,10 @@ function loadResults(): FixtureResult[] {
   const files = readdirSync(RESULTS_DIR).filter((f) => f.startsWith("compression-") && f.endsWith(".json"));
   const all: FixtureResult[] = [];
   for (const file of files) {
-    const parsed = JSON.parse(readFileSync(join(RESULTS_DIR, file), "utf8")) as FixtureResult[];
-    all.push(...parsed);
+    const parsed = JSON.parse(readFileSync(join(RESULTS_DIR, file), "utf8")) as
+      | FixtureResult[]
+      | { results: FixtureResult[] };
+    all.push(...(Array.isArray(parsed) ? parsed : parsed.results));
   }
   return all;
 }
@@ -77,6 +79,23 @@ export function renderMarkdown(results: FixtureResult[]): string {
       `Overall reduction: ${pct(((totalOriginal - totalOptimized) / totalOriginal) * 100)}`,
       "",
     );
+  }
+
+  sections.push("", "## By workload", "");
+  sections.push("| Workload | Preset | Original (chars) | Optimized (chars) | Reduction |");
+  sections.push("| --- | --- | ---: | ---: | ---: |");
+  const workloadGroups = new Map<string, FixtureResult[]>();
+  for (const result of results) {
+    const key = `${result.workload}\u0000${result.preset}`;
+    const list = workloadGroups.get(key) ?? [];
+    list.push(result);
+    workloadGroups.set(key, list);
+  }
+  for (const [key, list] of [...workloadGroups].sort(([a], [b]) => a.localeCompare(b))) {
+    const [workload = "unclassified", preset = "unknown"] = key.split("\u0000");
+    const original = list.reduce((sum, item) => sum + item.originalCharacters, 0);
+    const optimized = list.reduce((sum, item) => sum + item.optimizedCharacters, 0);
+    sections.push(`| ${workload} | ${preset} | ${original.toLocaleString("en-US")} | ${optimized.toLocaleString("en-US")} | ${pct(((original - optimized) / original) * 100)} |`);
   }
 
   sections.push(

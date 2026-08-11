@@ -23,7 +23,7 @@ try {
   execFileSync("npm", ["init", "-y"], { cwd: temp, stdio: "ignore", env: npmEnv });
   execFileSync("npm", ["install", "--ignore-scripts", tarball], { cwd: temp, stdio: "ignore", env: npmEnv });
   execFileSync(process.execPath, ["--input-type=module", "--eval", 'import { optimize, InputLimitError } from "iritoken"; const r=optimize("\\x1b[31ma\\x1b[0m\\n\\n\\n\\nb"); if (!(r.text === "a\\n\\nb" && InputLimitError)) process.exit(1);'], { cwd: temp });
-  execFileSync(process.execPath, ["--input-type=module", "--eval", 'import { createOptimizeTransform } from "iritoken/stream"; import { optimizeMessages } from "iritoken/integrations/messages"; if (!(createOptimizeTransform() && optimizeMessages([{role:"tool",content:"ok"}]).messages.length === 1)) process.exit(1);'], { cwd: temp });
+  execFileSync(process.execPath, ["--input-type=module", "--eval", 'import { createOptimizeTransform, createTerminalOptimizeTransform } from "iritoken/stream"; import { optimizeMessages } from "iritoken/integrations/messages"; if (!(createOptimizeTransform() && createTerminalOptimizeTransform() && optimizeMessages([{role:"tool",content:"ok"}]).messages.length === 1)) process.exit(1);'], { cwd: temp });
 
   const bin = join(temp, "node_modules", ".bin", "iritoken");
   assert.ok(existsSync(bin));

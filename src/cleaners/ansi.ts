@@ -14,16 +14,21 @@ import type { Cleaner, CleanerResult, ContentDetection } from "../types.js";
 const CSI_OR_OSC =
   /\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\))/g;
 
+export function stripAnsi(text: string): { text: string; count: number } {
+  let count = 0;
+  const output = text.replace(CSI_OR_OSC, () => {
+    count += 1;
+    return "";
+  });
+  return { text: output, count };
+}
+
 export class AnsiCleaner implements Cleaner {
   readonly id = "ansi";
   readonly description = "Remove ANSI escape sequences";
 
   clean(text: string, _detection: ContentDetection): CleanerResult {
-    let count = 0;
-    const out = text.replace(CSI_OR_OSC, () => {
-      count += 1;
-      return "";
-    });
+    const { text: out, count } = stripAnsi(text);
     return {
       text: out,
       changes:

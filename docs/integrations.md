@@ -46,6 +46,19 @@ await pipeline(
 );
 ```
 
+`createOptimizeTransform()` buffers the bounded input so its output remains
+exactly equivalent to `optimize()`. For input already known to be terminal
+output, use the memory-bounded line-streaming variant:
+
+```ts
+import { createTerminalOptimizeTransform } from "iritoken/stream";
+
+source.pipe(createTerminalOptimizeTransform({ maxLineBytes: 1024 * 1024 })).pipe(destination);
+```
+
+The terminal variant applies ANSI, whitespace, and consecutive duplicate-line
+cleanup. It does not run global detection or balanced/aggressive cleaners.
+
 The transform is backpressure-aware but bounded-buffered: it waits for all
 input so detection and output match `optimize()` exactly. `maxInputBytes`
 prevents unbounded memory use.

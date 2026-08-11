@@ -1,16 +1,8 @@
-/**
- * Performance benchmark.
- *
- * Measures iritoken's own processing cost on deterministic inputs of
- * increasing size (10 KB, 100 KB, 1 MB, 10 MB) to catch accidental O(n²)
- * behaviour. Runtime memory and processing time are measured from actual
- * execution; inputs come from a seeded generator so runs are reproducible.
- */
-
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { optimize } from "../src/pipeline/optimize.js";
 import type { PresetName } from "../src/types.js";
 
-/** Deterministic PRNG (mulberry32) so generated inputs are reproducible. */
 function makeRng(seed: number) {
   let state = seed >>> 0;
   return () => {
@@ -39,56 +31,87 @@ function generateInput(targetBytes: number, seed: number): string {
   let size = 0;
   while (size < targetBytes) {
     const pick = BITS[Math.floor(rand() * BITS.length)] ?? "plain line";
-    const line = parts.length % 23 === 12 ? "" : pick; // periodic blank lines
+    const line = parts.length % 23 === 12 ? "" : pick;
     parts.push(line);
-    size += line.length + 1;
+    size += Buffer.byteLength(line) + 1;
   }
   return parts.join("\n");
 }
 
-interface PerfResult {
+interface Trial {
   inputBytes: number;
-  ms: number;
-  mib: number;
-  msPerMiB: number;
   outputBytes: number;
+  ms: number;
+  peakRssMiB: number;
 }
 
-export function runPerformance(preset: PresetName): PerfResult[] {
-  const results: PerfResult[] = [];
+interface PerfResult extends Trial {
+  trials: number;
+  msPerMiB: number;
+}
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)] ?? 0;
+}
+
+function worker(size: number, preset: PresetName): void {
+  const input = generateInput(size, 42);
+  global.gc?.();
+  const start = performance.now();
+  const result = optimize(input, { preset });
+  const trial: Trial = {
+    inputBytes: Buffer.byteLength(input),
+    outputBytes: Buffer.byteLength(result.text),
+    ms: performance.now() - start,
+    peakRssMiB: process.resourceUsage().maxRSS / 1024,
+  };
+  process.stdout.write(JSON.stringify(trial));
+}
+
+export function runPerformance(preset: PresetName, trialCount = 3): PerfResult[] {
+  const script = fileURLToPath(import.meta.url);
   const targets = [10 * 1024, 100 * 1024, 1024 * 1024, 10 * 1024 * 1024];
-  for (const size of targets) {
-    const input = generateInput(size, 42);
-    const before = process.memoryUsage().heapUsed;
-    const start = performance.now();
-    const result = optimize(input, { preset });
-    const ms = performance.now() - start;
-    const after = process.memoryUsage().heapUsed;
-    results.push({
-      inputBytes: input.length,
+  return targets.map((size) => {
+    const trials: Trial[] = [];
+    for (let trial = 0; trial < trialCount; trial += 1) {
+      const output = execFileSync(
+        process.execPath,
+        ["--expose-gc", "--import", "tsx", script, "--worker", String(size), preset],
+        { encoding: "utf8", maxBuffer: 1024 * 1024 },
+      );
+      trials.push(JSON.parse(output) as Trial);
+    }
+    const inputBytes = median(trials.map((item) => item.inputBytes));
+    const ms = median(trials.map((item) => item.ms));
+    return {
+      inputBytes,
+      outputBytes: median(trials.map((item) => item.outputBytes)),
       ms: Math.round(ms * 10) / 10,
-      mib: Math.round((after - before) / (1024 * 1024) * 10) / 10,
-      msPerMiB: Math.round((ms / (input.length / (1024 * 1024))) * 10) / 10,
-      outputBytes: result.text.length,
-    });
+      peakRssMiB: Math.round(median(trials.map((item) => item.peakRssMiB)) * 10) / 10,
+      trials: trialCount,
+      msPerMiB: Math.round((ms / (inputBytes / (1024 * 1024))) * 10) / 10,
+    };
+  });
+}
+
+if (process.argv[2] === "--worker") {
+  const size = Number(process.argv[3]);
+  const preset = (process.argv[4] ?? "balanced") as PresetName;
+  worker(size, preset);
+} else {
+  const preset = ((process.argv[2] as PresetName | undefined) ?? "balanced") as PresetName;
+  const results = runPerformance(preset);
+  process.stdout.write(`iritoken isolated performance benchmark (preset: ${preset}, median of 3)\n\n`);
+  process.stdout.write("Input          Output         Time    Peak RSS   ms/MiB\n");
+  for (const result of results) {
+    process.stdout.write(
+      `${(result.inputBytes / (1024 * 1024)).toFixed(2).padStart(8)} MiB  ${(result.outputBytes / (1024 * 1024)).toFixed(2).padStart(10)} MiB  ${result.ms.toFixed(1).padStart(7)} ms  ${result.peakRssMiB.toFixed(1).padStart(7)} MiB  ${result.msPerMiB.toFixed(1).padStart(7)}\n`,
+    );
   }
-  return results;
-}
-
-const preset = ((process.argv[2] as PresetName | undefined) ?? "balanced") as PresetName;
-const results = runPerformance(preset);
-
-console.log(`iritoken performance benchmark (preset: ${preset})`);
-console.log("");
-console.log("Input          Output         Time     Δheap    ms/MiB");
-for (const r of results) {
-  console.log(
-    `${(r.inputBytes / (1024 * 1024)).toFixed(2).padStart(8)} MiB  ${(r.outputBytes / (1024 * 1024)).toFixed(2).padStart(10)} MiB  ${r.ms.toFixed(1).padStart(7)} ms  ${r.mib.toFixed(1).padStart(6)} MiB  ${r.msPerMiB.toFixed(1).padStart(7)}`,
-  );
-}
-
-const worst = results[results.length - 1];
-if (worst && worst.ms > 10000) {
-  process.stderr.write("Warning: 10MB input took longer than 10s — possible O(n²) regression.\n");
-  process.exitCode = 1;
+  const worst = results.at(-1);
+  if (worst && (worst.ms > 10_000 || worst.peakRssMiB > 350)) {
+    process.stderr.write("Performance budget exceeded: 10 MiB must stay below 10 s and 350 MiB peak RSS.\n");
+    process.exitCode = 1;
+  }
 }

@@ -7,7 +7,7 @@ import {
   optimize,
   optimizeMessages,
 } from "../src/index.js";
-import { createOptimizeTransform } from "../src/stream.js";
+import { createOptimizeTransform, createTerminalOptimizeTransform } from "../src/stream.js";
 
 describe("tokenizer adapters", () => {
   it("adapts encode and tokenize interfaces", () => {
@@ -59,6 +59,31 @@ describe("stream integration", () => {
 
   it("enforces byte limits", async () => {
     const stream = Readable.from(["too large"]).pipe(createOptimizeTransform({ maxInputBytes: 2 }));
+    await assert.rejects(async () => {
+      for await (const chunk of stream) void chunk;
+    }, /input is too large/);
+  });
+
+  it("incrementally optimizes known terminal output across chunk boundaries", async () => {
+    const input = "\x1b[32mterminal worker ready\x1b[0m   \nterminal worker ready\nterminal worker ready\nterminal worker ready\n\n\nfinished\n";
+    const bytes = Buffer.from(input);
+    const stats: Array<{ inputBytes: number; outputBytes: number }> = [];
+    const transform = createTerminalOptimizeTransform({
+      onStats: (value) => stats.push(value),
+    });
+    const output: Buffer[] = [];
+    const chunks = Array.from({ length: bytes.length }, (_, index) => bytes.subarray(index, index + 1));
+    for await (const chunk of Readable.from(chunks).pipe(transform)) output.push(chunk as Buffer);
+    const text = Buffer.concat(output).toString("utf8");
+    assert.equal(text, "terminal worker ready [repeated 4 times]\n\nfinished\n");
+    assert.equal(stats[0]?.inputBytes, bytes.length);
+    assert.equal(stats[0]?.outputBytes, Buffer.byteLength(text));
+  });
+
+  it("bounds newline-free terminal input", async () => {
+    const stream = Readable.from(["12345"]).pipe(
+      createTerminalOptimizeTransform({ maxLineBytes: 4 }),
+    );
     await assert.rejects(async () => {
       for await (const chunk of stream) void chunk;
     }, /input is too large/);
