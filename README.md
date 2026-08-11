@@ -71,15 +71,9 @@ Raw tool output is useful, but it is rarely token-efficient. A typical agent
 loop may resend the same noisy context several times. Even small deterministic
 savings compound across prompts, retries, models, and users.
 
-```text
-Raw coding context                 Optimized coding context
-──────────────────────────────     ──────────────────────────────
-ANSI formatting               ┐
-Repeated status lines          │
-Excessive blank space          ├──▶ Meaningful errors, evidence,
-Duplicate stack frames         │    locations, values, and summaries
-Repeated passing-test output   ┘
-```
+<p align="center">
+  <img src="assets/context-optimization.png" width="900" alt="Raw coding context is reduced to meaningful errors, evidence, locations, values, and summaries" />
+</p>
 
 `iritoken` is intentionally narrower than a summarizer. It removes patterns it
 can verify mechanically and leaves unique content alone.
@@ -319,20 +313,9 @@ See [the integration guide](docs/integrations.md) for additional examples.
 
 ## How it works
 
-```text
-Input
-  │
-  ├─ Content-type detection
-  │
-  ├─ ANSI cleaner
-  ├─ Whitespace cleaner
-  ├─ Consecutive-duplicate cleaner
-  ├─ Stack-trace cleaner          balanced+
-  ├─ Test-output cleaner          balanced+
-  └─ Repeated-block cleaner       aggressive only
-  │
-  └─ Optimized text + statistics + decisions
-```
+<p align="center">
+  <img src="assets/cleaning-pipeline.png" width="720" alt="iritoken cleaning pipeline from input through content detection and cleaners to optimized text, statistics, and decisions" />
+</p>
 
 | Cleaner | What it changes | What it preserves |
 | --- | --- | --- |
