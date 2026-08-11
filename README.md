@@ -472,6 +472,7 @@ npm run typecheck
 npm test
 npm run benchmark:verify
 npm run pack:smoke
+npm run release:check
 ```
 
 GitHub Actions verifies Node.js 18, 20, and 22, audits production dependencies,

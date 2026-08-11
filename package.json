@@ -15,12 +15,20 @@
     "cli"
   ],
   "license": "Apache-2.0",
+  "author": "dan",
   "homepage": "https://github.com/lelianto/iritoken",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lelianto/iritoken.git"
   },
+  "bugs": {
+    "url": "https://github.com/lelianto/iritoken/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -40,7 +48,7 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "iritoken": "./dist/cli/index.js"
+    "iritoken": "dist/cli/index.js"
   },
   "files": [
     "dist",
@@ -68,7 +76,8 @@
     "benchmark:verify": "npm run benchmark -- safe && npm run benchmark -- balanced && npm run benchmark:quality && npm run benchmark:corpus && npm run benchmark:perf && npm run report",
     "pack:smoke": "npm run build && node scripts/pack-smoke.mjs",
     "report": "tsx benchmark/report.ts",
-    "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run pack:smoke"
+    "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run pack:smoke",
+    "release:check": "npm run prepublishOnly && npm run benchmark:corpus && npm publish --dry-run --ignore-scripts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
