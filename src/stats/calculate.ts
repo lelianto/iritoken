@@ -37,6 +37,7 @@ export function buildStats(
     reductionPercentage: percentage(charactersRemoved, originalCharacters),
     transformations,
     detection: result.detection,
+    decisions: [],
   };
 
   if (tokenCounter) {

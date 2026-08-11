@@ -105,5 +105,6 @@ npm run benchmark:verify
 npm run pack:smoke
 ```
 
-The final implementation passed all 107 tests, lint, strict typechecking,
+The quality-first implementation passed all 107 tests at the time of the live
+run. The current enhanced package passes 117 tests, lint, strict typechecking,
 deterministic benchmarks, and packed-artifact smoke testing.

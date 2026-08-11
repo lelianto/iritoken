@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">iritoken logo</title>
+  <desc id="desc">A compact token represented by three narrowing context lines</desc>
+  <defs>
+    <linearGradient id="g" x1="28" y1="22" x2="132" y2="138" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="140" height="140" rx="38" fill="url(#g)"/>
+  <path d="M42 48h76M50 68h60M58 88h44" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+  <path d="M66 114h28" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round"/>
+</svg>

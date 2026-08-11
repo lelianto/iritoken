@@ -4,7 +4,7 @@ import { optimize } from "../src/pipeline/optimize.js";
 import type { PresetName, PresetOptions } from "../src/types.js";
 
 const PRESET_NAMES: PresetName[] = ["safe", "balanced", "aggressive"];
-const OPTION_NAMES: Array<keyof PresetOptions> = ["ansi", "whitespace", "duplicateLines", "stackTrace", "testOutput"];
+const OPTION_NAMES: Array<keyof PresetOptions> = ["ansi", "whitespace", "duplicateLines", "stackTrace", "testOutput", "repeatedBlocks"];
 
 function overrides(mask: number): Partial<PresetOptions> {
   return Object.fromEntries(OPTION_NAMES.map((name, bit) => [name, Boolean(mask & (1 << bit))]));

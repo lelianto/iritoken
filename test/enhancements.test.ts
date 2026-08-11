@@ -1,0 +1,78 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { Readable } from "node:stream";
+import {
+  fromEncoder,
+  fromTokenizer,
+  optimize,
+  optimizeMessages,
+} from "../src/index.js";
+import { createOptimizeTransform } from "../src/stream.js";
+
+describe("tokenizer adapters", () => {
+  it("adapts encode and tokenize interfaces", () => {
+    assert.equal(fromEncoder({ encode: (text) => [...text] }).count("abc"), 3);
+    assert.equal(fromTokenizer({ tokenize: (text) => text.split(/\s+/) }).count("a b"), 2);
+  });
+});
+
+describe("message integration", () => {
+  it("optimizes selected roles without mutating messages or system instructions", () => {
+    const input = [
+      { role: "system", content: "keep   exact" },
+      { role: "tool", content: "\x1b[31mERROR\x1b[0m" },
+    ];
+    const result = optimizeMessages(input);
+    assert.equal(result.messages[0]?.content, "keep   exact");
+    assert.equal(result.messages[1]?.content, "ERROR");
+    assert.equal(input[1]?.content, "\x1b[31mERROR\x1b[0m");
+    assert.equal(result.stats.length, 1);
+  });
+});
+
+describe("observability", () => {
+  it("reports metadata-only decisions and completion", () => {
+    const decisions: string[] = [];
+    let complete = false;
+    const result = optimize("\x1b[31mERROR\x1b[0m", {
+      observer: {
+        onCleaner: (decision) => decisions.push(`${decision.cleaner}:${decision.reason}`),
+        onComplete: () => { complete = true; },
+      },
+    });
+    assert.ok(decisions.includes("ansi:applied"));
+    assert.ok(decisions.includes("stack-trace:disabled-by-preset"));
+    assert.equal(result.stats.decisions.length, 6);
+    assert.equal(complete, true);
+  });
+});
+
+describe("stream integration", () => {
+  it("matches optimize across split UTF-8 chunks", async () => {
+    const input = "\x1b[31mERROR 😀\x1b[0m\n";
+    const bytes = Buffer.from(input);
+    const source = Readable.from([bytes.subarray(0, 12), bytes.subarray(12, 16), bytes.subarray(16)]);
+    const output: Buffer[] = [];
+    for await (const chunk of source.pipe(createOptimizeTransform())) output.push(chunk as Buffer);
+    assert.equal(Buffer.concat(output).toString("utf8"), optimize(input).text);
+  });
+
+  it("enforces byte limits", async () => {
+    const stream = Readable.from(["too large"]).pipe(createOptimizeTransform({ maxInputBytes: 2 }));
+    await assert.rejects(async () => {
+      for await (const chunk of stream) void chunk;
+    }, /input is too large/);
+  });
+});
+
+describe("distinct aggressive preset", () => {
+  it("collapses repeated multiline terminal blocks only in aggressive mode", () => {
+    const header = "Build started\nTarget: app\n";
+    const input = `${header}${header}${header}ERROR: final failure\ncommand exited with code 1\n`;
+    const balanced = optimize(input, { preset: "balanced" });
+    const aggressive = optimize(input, { preset: "aggressive" });
+    assert.ok(aggressive.text.length < balanced.text.length);
+    assert.match(aggressive.text, /\[block repeated 3 times\]/);
+    assert.equal(optimize(aggressive.text, { preset: "aggressive" }).text, aggressive.text);
+  });
+});

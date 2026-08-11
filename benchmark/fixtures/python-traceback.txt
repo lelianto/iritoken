@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/app/worker.py", line 88, in process_job
+    result = client.fetch(job.customer_id)
+  File "/app/client.py", line 41, in fetch
+    return response.json()["account"]
+  File "/app/client.py", line 41, in fetch
+    return response.json()["account"]
+  File "/app/client.py", line 41, in fetch
+    return response.json()["account"]
+KeyError: 'account'
+
+During handling of the above exception, another exception occurred:
+RuntimeError: job=invoice-4821 customer=customer-91 retry exhausted after 5 attempts

@@ -29,6 +29,14 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./stream": {
+      "types": "./dist/stream.d.ts",
+      "import": "./dist/stream.js"
+    },
+    "./integrations/messages": {
+      "types": "./dist/integrations/messages.d.ts",
+      "import": "./dist/integrations/messages.js"
+    },
     "./package.json": "./package.json"
   },
   "bin": {
@@ -37,6 +45,7 @@
   "files": [
     "dist",
     "docs",
+    "assets",
     "README.md",
     "SECURITY.md",
     "LICENSE"
@@ -53,9 +62,10 @@
     "benchmark": "tsx benchmark/run.ts",
     "benchmark:quality": "tsx benchmark/quality.ts",
     "benchmark:perf": "tsx benchmark/performance.ts",
+    "benchmark:corpus": "tsx benchmark/corpus-regression.ts",
     "benchmark:groq": "tsx benchmark/groq-live.ts",
     "benchmark:deepseek": "tsx benchmark/deepseek-live.ts",
-    "benchmark:verify": "npm run benchmark -- safe && npm run benchmark -- balanced && npm run benchmark:quality && npm run benchmark:perf && npm run report",
+    "benchmark:verify": "npm run benchmark -- safe && npm run benchmark -- balanced && npm run benchmark:quality && npm run benchmark:corpus && npm run benchmark:perf && npm run report",
     "pack:smoke": "npm run build && node scripts/pack-smoke.mjs",
     "report": "tsx benchmark/report.ts",
     "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run pack:smoke"

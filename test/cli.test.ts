@@ -98,6 +98,38 @@ describe("iritoken CLI (built)", () => {
     assert.ok(r.stdout.includes("Reduction"));
   });
 
+  it("--stdout behaves as a composable Unix filter", () => {
+    const r = runCli(["--stdout"], "\x1b[31mERROR\x1b[0m\n");
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, "ERROR\n");
+    assert.equal(r.stderr, "");
+  });
+
+  it("--json emits a versioned machine-readable result", () => {
+    const r = runCli(["--json"], "\x1b[31mERROR\x1b[0m\n");
+    assert.equal(r.status, 0);
+    const value = JSON.parse(r.stdout) as { schemaVersion: number; text: string; stats: { decisions: unknown[] } };
+    assert.equal(value.schemaVersion, 1);
+    assert.equal(value.text, "ERROR\n");
+    assert.ok(Array.isArray(value.stats.decisions));
+  });
+
+  it("--quiet suppresses reports written alongside an output file", () => {
+    const file = join(dir, "quiet-in.log");
+    const out = join(dir, "quiet-out.log");
+    writeFileSync(file, "\x1b[31mERROR\x1b[0m\n");
+    const r = runCli([file, "--output", out, "--quiet"]);
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, "");
+    assert.equal(readFileSync(out, "utf8"), "ERROR\n");
+  });
+
+  it("rejects conflicting output modes", () => {
+    const r = runCli(["--stdout", "--json"], "input");
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /cannot be combined/);
+  });
+
   it("rejects stdin above the configured size limit", () => {
     const r = runCli(["--max-input-mb", "0.000001"], "too large");
     assert.equal(r.status, 1);

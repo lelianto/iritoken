@@ -1,0 +1,33 @@
+name: Release package
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to npm after all checks pass
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify-and-pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      - run: npm ci
+      - run: npm run prepublishOnly
+      - run: npm run benchmark:verify
+      - run: npm pack --dry-run
+      - if: ${{ inputs.publish }}
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

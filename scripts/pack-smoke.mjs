@@ -15,7 +15,7 @@ try {
   assert.equal(typeof filename, "string", "npm pack did not return a tarball name");
   const tarball = join(root, filename);
   const contents = packed[0].files.map((entry) => entry.path);
-  for (const required of ["dist/index.js", "dist/index.d.ts", "dist/security.js", "docs/quality-benchmark.md", "LICENSE", "README.md", "SECURITY.md"]) {
+  for (const required of ["dist/index.js", "dist/index.d.ts", "dist/security.js", "dist/stream.js", "dist/integrations/messages.js", "docs/quality-benchmark.md", "docs/integrations.md", "assets/logo.svg", "LICENSE", "README.md", "SECURITY.md"]) {
     assert.ok(contents.includes(required), `tarball is missing ${required}`);
   }
   assert.ok(!contents.some((path) => /^(src|test|benchmark)\//.test(path)));
@@ -23,6 +23,7 @@ try {
   execFileSync("npm", ["init", "-y"], { cwd: temp, stdio: "ignore", env: npmEnv });
   execFileSync("npm", ["install", "--ignore-scripts", tarball], { cwd: temp, stdio: "ignore", env: npmEnv });
   execFileSync(process.execPath, ["--input-type=module", "--eval", 'import { optimize, InputLimitError } from "iritoken"; const r=optimize("a\\n\\n\\n\\nb"); if (!(r.text === "a\\n\\nb" && InputLimitError)) process.exit(1);'], { cwd: temp });
+  execFileSync(process.execPath, ["--input-type=module", "--eval", 'import { createOptimizeTransform } from "iritoken/stream"; import { optimizeMessages } from "iritoken/integrations/messages"; if (!(createOptimizeTransform() && optimizeMessages([{role:"tool",content:"ok"}]).messages.length === 1)) process.exit(1);'], { cwd: temp });
 
   const bin = join(temp, "node_modules", ".bin", "iritoken");
   assert.ok(existsSync(bin));

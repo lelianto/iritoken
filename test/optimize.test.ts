@@ -76,7 +76,7 @@ describe("optimize pipeline", () => {
     assert.equal(r.stats.transformations["test-output"], undefined);
   });
 
-  it("aggressive preset behaves like balanced for now", () => {
+  it("aggressive preserves ordinary balanced output when no repeated block applies", () => {
     const safe = optimize(VITEST, { preset: "safe" });
     const bal = optimize(VITEST, { preset: "balanced" });
     const agg = optimize(VITEST, { preset: "aggressive" });
@@ -128,6 +128,7 @@ describe("optimize pipeline", () => {
   it("exposes exported presets", () => {
     assert.equal(PRESETS.safe.stackTrace, false);
     assert.equal(PRESETS.balanced.stackTrace, true);
-    assert.deepEqual(PRESETS.aggressive, PRESETS.balanced);
+    assert.equal(PRESETS.balanced.repeatedBlocks, false);
+    assert.equal(PRESETS.aggressive.repeatedBlocks, true);
   });
 });

@@ -1,454 +1,521 @@
-# iritoken
+<div align="center">
+  <img src="assets/logo.svg" width="112" height="112" alt="iritoken logo" />
 
-> iritoken removes deterministic noise from AI coding context before it reaches an LLM.
+  <h1>iritoken</h1>
 
-Don't spend AI tokens on information your model doesn't need.
+  <p><strong>Spend tokens on answers, not terminal noise.</strong></p>
 
-iritoken is a lightweight, **deterministic** preprocessing library (and CLI) that reduces unnecessary tokens from AI coding context — CLI output, TypeScript compiler errors, test results, stack traces, repetitive logs, ANSI formatting, and stray whitespace — **without using an LLM**.
+  <p>
+    A deterministic, zero-runtime-dependency TypeScript toolkit that removes<br />
+    low-value noise from AI coding context—locally, safely, and without an LLM.
+  </p>
 
-Everything is local, stateless, and cheap to run.
+  <p>
+    <a href="https://www.npmjs.com/package/iritoken"><img src="https://img.shields.io/npm/v/iritoken?style=flat-square&color=2563eb" alt="npm version" /></a>
+    <a href="https://github.com/lelianto/iritoken/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/lelianto/iritoken/ci.yml?branch=main&style=flat-square&label=CI" alt="CI status" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-7c3aed?style=flat-square" alt="Apache 2.0 license" /></a>
+    <a href="https://www.npmjs.com/package/iritoken"><img src="https://img.shields.io/npm/dm/iritoken?style=flat-square&color=0f766e" alt="npm downloads" /></a>
+    <img src="https://img.shields.io/badge/dependencies-0-16a34a?style=flat-square" alt="zero runtime dependencies" />
+  </p>
+
+  <p>
+    <a href="#quick-start">Quick start</a> ·
+    <a href="#cli">CLI</a> ·
+    <a href="#library-api">API</a> ·
+    <a href="#benchmarks">Benchmarks</a> ·
+    <a href="#security">Security</a>
+  </p>
+</div>
+
+---
+
+AI coding workflows repeatedly send ANSI codes, duplicate logs, redundant stack
+frames, test-runner noise, and excessive whitespace to language models.
+`iritoken` removes that deterministic noise before it consumes context-window
+space or API budget.
 
 ```text
 same input + same configuration = same output
 ```
 
-- Built with TypeScript, zero runtime dependencies
-- ESM only
-- Programmatic API + CLI
-- No API key, no network access, no telemetry — nothing ever leaves your machine
-- Optional token counting, character stats always
+It makes no network requests, uses no model, needs no API key, and never
+summarizes content. When a transformation is uncertain, the original
+information is preserved.
 
----
+## Table of contents
 
-## Why
+- [Why iritoken?](#why-iritoken)
+- [Features](#features)
+- [Quick start](#quick-start)
+- [CLI](#cli)
+- [Library API](#library-api)
+  - [Presets](#presets)
+  - [Cleaner overrides](#cleaner-overrides)
+  - [Exact token measurement](#exact-token-measurement)
+  - [Explainability and observability](#explainability-and-observability)
+- [Integrations](#integrations)
+  - [Chat messages](#chat-messages)
+  - [Node streams](#node-streams)
+- [How it works](#how-it-works)
+- [Safety guarantees](#safety-guarantees)
+- [Benchmarks](#benchmarks)
+- [Security](#security)
+- [Development](#development)
+- [Project structure](#project-structure)
+- [Contributing](#contributing)
+- [License](#license)
 
-AI coding workflows repeatedly send large, noisy contexts to LLMs: `npm test` walls, redundant stack frames, `Connecting...` repeated hundreds of times, `\x1b[31m` color codes, trailing whitespace. A large share of that text carries almost no information. You pay for those tokens on every call.
+## Why iritoken?
 
-iritoken v0.1 removes the obviously-low-value parts while preserving the information a model actually needs — like error types, file names, failed test names, expected/received values, and stack frames.
+Raw tool output is useful, but it is rarely token-efficient. A typical agent
+loop may resend the same noisy context several times. Even small deterministic
+savings compound across prompts, retries, models, and users.
 
-The core safety rule:
+```text
+Raw coding context                 Optimized coding context
+──────────────────────────────     ──────────────────────────────
+ANSI formatting               ┐
+Repeated status lines          │
+Excessive blank space          ├──▶ Meaningful errors, evidence,
+Duplicate stack frames         │    locations, values, and summaries
+Repeated passing-test output   ┘
+```
 
-> When uncertain, preserve the original information.
+`iritoken` is intentionally narrower than a summarizer. It removes patterns it
+can verify mechanically and leaves unique content alone.
 
-iritoken prefers lower compression over destructive compression.
+## Features
 
----
+- **Deterministic:** reproducible output with no probabilistic model behavior.
+- **Local and private:** no telemetry, network requests, storage, or API keys.
+- **Zero runtime dependencies:** small supply-chain and installation footprint.
+- **Conservative by default:** `safe` is the default preset.
+- **Idempotent:** optimizing an optimized result produces the same text.
+- **Non-expanding:** transformations never return more text than they receive.
+- **Explainable:** every cleaner reports whether it ran, changed, or skipped.
+- **Composable:** library API, Unix filter, JSON output, chat helpers, and streams.
+- **Measured:** deterministic regression corpus plus live-model quality results.
+- **Typed:** ESM TypeScript package with bundled declaration files.
 
-## Install
+## Quick start
+
+### Install
 
 ```bash
 npm install iritoken
 ```
 
-## Library usage
+Node.js 18 or newer is required.
+
+### Optimize text
 
 ```ts
 import { optimize } from "iritoken";
 
-const result = optimize(rawContext);
+const result = optimize(rawContext, { preset: "balanced" });
 
 console.log(result.text);
-console.log(result.stats);
+console.log(result.stats.reductionPercentage);
 ```
+
+### Use it as a Unix filter
+
+```bash
+npm test 2>&1 | npx iritoken --preset balanced --stdout > context.txt
+```
+
+That is the core workflow: produce context, optimize it locally, then send the
+result to the model or agent of your choice.
+
+## CLI
+
+```text
+Usage:
+  iritoken [file] [options]
+  command | iritoken [options]
+
+Options:
+  -o, --output <path>   Write optimized text to a file
+  --preset <name>       safe (default) | balanced | aggressive
+  --stdout              Emit optimized text only
+  --json                Emit a versioned machine-readable result
+  --dry-run             Report statistics without writing output
+  --explain             Explain the transformations
+  --max-input-mb <n>    Override the 16 MiB input limit
+  -q, --quiet           Suppress the report when using --output
+  -h, --help            Show help
+  -v, --version         Show version
+```
+
+### Common recipes
+
+```bash
+# Analyze a log without modifying it
+iritoken build.log --dry-run
+
+# Save optimized context securely
+iritoken build.log --preset balanced --output build.optimized.log
+
+# Compose with another command
+npm test 2>&1 | iritoken --stdout | pbcopy
+
+# Inspect machine-readable statistics
+iritoken build.log --json | jq '.stats'
+
+# Understand why cleaners changed or skipped the input
+iritoken build.log --preset balanced --explain
+```
+
+`--stdout` writes only optimized text. Human reports never contaminate the
+pipeline. `--json` uses a top-level `schemaVersion` so automation can validate
+the response format.
+
+## Library API
+
+### `optimize(input, options?)`
+
+```ts
+import { optimize } from "iritoken";
+
+const result = optimize("\u001b[31mERROR\u001b[0m\n\n\nDetails", {
+  preset: "safe",
+  maxInputCharacters: 2_000_000
+});
+```
+
+The result contains optimized text and character statistics:
 
 ```ts
 {
-  text: "...optimized context...",
+  text: "ERROR\n\nDetails",
   stats: {
-    originalCharacters: 18420,
-    optimizedCharacters: 10281,
-    charactersRemoved: 8139,
-    reductionPercentage: 44.19,
-    transformations: { ansi: 42, whitespace: 28, "duplicate-lines": 17 },
-    detection: { type: "generic-terminal-output", confidence: "high" }
+    originalCharacters: 27,
+    optimizedCharacters: 14,
+    charactersRemoved: 13,
+    reductionPercentage: 48.15,
+    transformations: { ansi: 2, whitespace: 1 },
+    detection: { type: "generic-terminal-output", confidence: "high" },
+    decisions: [
+      { cleaner: "ansi", enabled: true, changes: 2, reason: "applied" }
+    ]
   }
 }
 ```
 
-Character-based statistics always work. Token counting is optional (see [Token measurement](#token-measurement)).
+### Presets
 
-### Configuration and presets
+| Preset | Behavior | Recommended for |
+| --- | --- | --- |
+| `safe` | ANSI, whitespace, and consecutive exact duplicates | Default and unknown input |
+| `balanced` | `safe` plus conservative stack and test-output cleanup | Coding-agent and CI context |
+| `aggressive` | `balanced` plus repeated identical multiline blocks | Opt-in repetitive terminal output |
 
-```ts
-optimize(context, { preset: "safe" });        // default
-optimize(context, { preset: "balanced" });
-optimize(context, { preset: "aggressive" });
-```
+The published live-model quality result applies to `balanced`. The additional
+aggressive block cleaner is deterministic and corpus-tested, but has not yet
+received the same live-model validation.
 
-| Preset | What it enables |
-| --- | --- |
-| `safe` (default) | ANSI removal, trailing whitespace, excessive blank lines, consecutive exact duplicates |
-| `balanced` | Everything in `safe` + recognized test-output collapse + conservative stack-trace cleanup |
-| `aggressive` | Placeholder — for v0.1 it behaves like `balanced`. No destructive semantic compression yet. |
+### Cleaner overrides
 
-Each cleaner is independently toggleable:
+Every cleaner can be enabled or disabled independently:
 
 ```ts
-optimize(context, { cleaners: { ansi: true, testOutput: false } });
+const result = optimize(context, {
+  preset: "balanced",
+  cleaners: {
+    whitespace: false,
+    testOutput: true,
+    repeatedBlocks: false
+  }
+});
 ```
 
-### Token measurement
+Available keys are `ansi`, `whitespace`, `duplicateLines`, `stackTrace`,
+`testOutput`, and `repeatedBlocks`.
 
-Token counting is a separate, optional layer. Supply your own tokenizer when you have one:
+### Exact token measurement
+
+Character statistics always work. Exact token statistics require the tokenizer
+for the model you intend to use:
+
+```ts
+import { fromEncoder, optimize } from "iritoken";
+
+const result = optimize(context, {
+  tokenCounter: fromEncoder(modelEncoder)
+});
+
+console.log(result.stats.tokens);
+```
+
+Tokenizers exposing `tokenize()` can use `fromTokenizer()` instead. The
+adapters are structural and introduce no dependency. Without a supplied
+counter, the library does not claim exact model-token savings.
+
+### Explainability and observability
+
+`stats.decisions` records an outcome for every cleaner:
+
+- `applied`
+- `not-applicable`
+- `disabled-by-preset`
+
+For metrics, use synchronous metadata-only observer hooks. Input text is never
+passed to the observer:
 
 ```ts
 optimize(context, {
-  tokenCounter: {
-    count(text) {
-      return myTokenizer(text);
+  observer: {
+    onCleaner(decision) {
+      metrics.increment(`iritoken.${decision.cleaner}.${decision.reason}`);
+    },
+    onComplete(stats) {
+      metrics.observe("iritoken.reduction", stats.reductionPercentage);
     }
   }
 });
 ```
 
-When a counter is provided, stats additionally include `originalTokens`, `optimizedTokens`, `tokensRemoved`, and `tokenReductionPercentage`.
+## Integrations
 
-iritoken **never claims exact model token savings** from character counts. The CLI and benchmarks use a documented `char/4` heuristic for display and label it as an estimate.
+### Chat messages
 
-### Idempotence
-
-Optimization is idempotent wherever possible:
+Optimize OpenAI-compatible message objects without coupling the package to any
+provider SDK:
 
 ```ts
-optimize(optimize(input).text).text === optimize(input).text
+import { optimizeMessages } from "iritoken";
+
+const { messages, stats } = optimizeMessages(request.messages, {
+  preset: "balanced",
+  roles: ["tool", "user"]
+});
 ```
 
-An already-optimized fixture is not reduced further (asserted in tests and by the benchmark runner).
+The input array is never mutated. By default, only `user` and `tool` messages
+are optimized; system instructions and assistant messages are copied unchanged.
 
----
+### Node streams
 
-## CLI
+```ts
+import { createReadStream, createWriteStream } from "node:fs";
+import { pipeline } from "node:stream/promises";
+import { createOptimizeTransform } from "iritoken/stream";
+
+await pipeline(
+  createReadStream("build.log"),
+  createOptimizeTransform({
+    preset: "balanced",
+    maxInputBytes: 8 * 1024 * 1024
+  }),
+  createWriteStream("context.txt")
+);
+```
+
+The transform honors backpressure and enforces a byte limit. It buffers input
+up to that limit before emitting because content detection requires the full
+context to remain exactly equivalent to `optimize()`.
+
+See [the integration guide](docs/integrations.md) for additional examples.
+
+## How it works
+
+```text
+Input
+  │
+  ├─ Content-type detection
+  │
+  ├─ ANSI cleaner
+  ├─ Whitespace cleaner
+  ├─ Consecutive-duplicate cleaner
+  ├─ Stack-trace cleaner          balanced+
+  ├─ Test-output cleaner          balanced+
+  └─ Repeated-block cleaner       aggressive only
+  │
+  └─ Optimized text + statistics + decisions
+```
+
+| Cleaner | What it changes | What it preserves |
+| --- | --- | --- |
+| ANSI | CSI and OSC control sequences | Visible text |
+| Whitespace | Trailing space and excessive blank lines | Indentation and meaningful alignment |
+| Duplicates | Consecutive exact duplicate lines | One copy plus repetition count |
+| Stack trace | Consecutive identical frames | Errors, unique frames, paths, line numbers |
+| Test output | Repeated passing-test runs in fully passing reports | Failures, assertions, values, summaries |
+| Repeated blocks | Three or more identical 2–8-line terminal blocks | One complete block plus repetition count |
+
+Content is classified as terminal output, source code, stack trace, test
+output, or unknown. Riskier transformations only run when their expected
+content type is recognized.
+
+## Safety guarantees
+
+The implementation and regression suite enforce these invariants:
+
+1. **Deterministic:** identical inputs and options produce identical outputs.
+2. **Idempotent:** `optimize(optimize(x).text).text === optimize(x).text`.
+3. **Non-expanding:** optimized text is never longer than the original.
+4. **Bounded:** library and CLI inputs are limited by default.
+5. **Conservative:** unique or ambiguous information is preserved.
+6. **Content-blind telemetry:** observer hooks receive metadata, not source text.
+
+Deterministic optimization does not mean semantic perfection. Evaluate the
+chosen preset against your own corpus before inserting it into a critical
+automated workflow.
+
+## Benchmarks
+
+Benchmarks are generated by running the real implementation against committed
+fixtures. Compression is useful only when task quality survives.
+
+### Current deterministic results
+
+| Metric | Result |
+| --- | ---: |
+| Quality tasks | **10/10 → 10/10** |
+| Success regression | **0 percentage points** |
+| Estimated input tokens | **2,701 → 2,396** |
+| Estimated token reduction | **11.3%** |
+| Balanced corpus character reduction | **12.0%** |
+| Corpus regression matrix | **10 tasks × 3 presets passed** |
+| Unit and integration tests | **117/117 passed** |
+
+The deterministic corpus includes npm, TypeScript, Vitest, Jest, stack traces,
+repetitive logs, mixed agent context, Docker, Kubernetes, and Python failures.
+
+### Live-model quality result
+
+The latest quality-first run used `deepseek-v4-flash`, thinking disabled, five
+trials, and 70 requests on the original seven-task suite:
+
+| Metric | Original | Optimized |
+| --- | ---: | ---: |
+| API-reported input tokens | 22,840 | 19,695 |
+| Fact recall | 83.2% | 85.2% |
+| Complete tasks | 16/35 | 19/35 |
+
+- Actual API token reduction: **13.77%**
+- Paired mean quality change: **+2.14 percentage points**
+- Task-cluster bootstrap 95% CI: **0.00 to +6.43 percentage points**
+- Pre-registered −5pp non-inferiority margin: **passed**
+- Recorded cost: approximately **$0.007438**
+
+This result supports non-inferiority for that model, configuration, and task
+suite—not every model or workload. The three newer fixtures have deterministic
+coverage and should be included in the next live-model campaign.
+
+### Performance
+
+Latest balanced-preset run:
+
+| Input | Time | Heap change | Throughput cost |
+| --- | ---: | ---: | ---: |
+| 10 KiB | ~2.2 ms | <1 MiB | ~227 ms/MiB |
+| 100 KiB | ~3.7 ms | <1 MiB | ~38 ms/MiB |
+| 1 MiB | ~32 ms | ~5 MiB | ~32 ms/MiB |
+| 10 MiB | ~256 ms | ~83 MiB | ~26 ms/MiB |
+
+See the [generated compression report](benchmark/results/REPORT.md) and
+[quality methodology](docs/quality-benchmark.md) for fixtures, limitations,
+historical results, and reproduction instructions.
+
+### Reproduce locally
 
 ```bash
-# summary report
-iritoken build.log
-
-# write the optimized text to a file
-iritoken build.log --output optimized.log
-
-# read from stdin — pipe any CLI tool's output in
-npm test 2>&1 | iritoken
-
-# choose a preset
-iritoken build.log --preset balanced
-
-# stats without writing anything
-iritoken build.log --dry-run
-
-# explain what changed
-iritoken build.log --explain
+npm run benchmark -- balanced
+npm run benchmark:quality
+npm run benchmark:corpus
+npm run benchmark:perf
+npm run report
 ```
 
-### Example report
+Live-provider benchmarks are intentionally separate and cost-capped:
 
-```text
-iritoken
-
-Original size     84.2 KB    86212 chars
-Optimized size    51.8 KB    53024 chars
-Reduction         38.5%
-Tokens (est.)     18,412 -> 10,281 (heuristic)
-
-Transformations
-ANSI              142
-Whitespace         81
-Duplicates         37
-Stack frames        0
-Test output         0
+```bash
+npm run benchmark:groq -- --trials 1
+npm run benchmark:deepseek -- --trials 1 --max-cost-usd 0.01
 ```
 
-### Explain mode
+## Security
 
-```text
-iritoken Analysis
+`iritoken` is a local text processor. It does not execute input, open sockets,
+query databases, fetch URLs, parse sessions, or expose an HTTP server. SQL
+injection, CSRF, and SSRF therefore have no direct attack surface in this
+package.
 
-ANSI escape sequences
-Removed: 142
+Resource-exhaustion and filesystem protections include:
 
-Excessive whitespace
-Edits: 81
+- 16 Mi-character library input limit by default
+- 16 MiB CLI and stream input limit by default
+- bounded stdin accumulation
+- refusal to overwrite the input file
+- refusal to write through output symlinks
+- owner-only permissions for new CLI output files
+- sanitized diagnostic messages
 
-Consecutive duplicate lines
-Groups collapsed: 37
+Applications exposing `iritoken` over HTTP must still implement authentication,
+authorization, body/time limits, rate limiting, CSRF controls, SSRF protection,
+parameterized database queries, and edge-level DDoS mitigation at their own
+trust boundary.
 
-Recognized content
-Type: generic-terminal-output
-Confidence: high
-
-Token estimate
-42101 -> 25312 tokens (heuristic, not exact model tokens)
-```
-
-Explain mode describes categories of edits without dumping source content.
-
----
-
-## Optimization pipeline
-
-```text
-Raw Context
-    ↓
-ANSI Cleaner
-    ↓
-Whitespace Cleaner
-    ↓
-Duplicate Cleaner
-    ↓
-Stack-Trace Cleaner (balanced+)
-    ↓
-Test-Output Cleaner (balanced+)
-    ↓
-Optimized Context
-```
-
-### ANSI Cleaner
-Strips CSI and OSC escape sequences (`\x1b[31m`, `\x1b]0;title\x07`, …) while keeping all underlying text.
-
-### Whitespace Cleaner
-- Removes trailing whitespace on every line
-- Collapses 3+ newlines to 2 (at most one blank line)
-- Collapses runs of 3+ mid-line spaces to a single space **only** in terminal-ish content (never in detected source code, never inside table-like lines, never leading indentation)
-
-### Duplicate Cleaner
-Collapses runs of consecutive, exact-duplicate lines:
-
-```text
-Connecting...
-Connecting...
-Connecting...
-Connecting...
-Connection failed
-```
-
-becomes
-
-```text
-Connecting... [repeated 4 times]
-Connection failed
-```
-
-Non-consecutive identical lines are left alone. The marker preserves the fact that repetition occurred. Never enlarges output (short lines are left as-is).
-
-### Stack-Trace Cleaner
-Conservative: collapses consecutive, identical stack frames (V8 / Chrome / Python style) into a single frame with a `[repeated N times]` marker. Nothing else is removed — error type, message, file names, and line/column numbers are preserved byte for byte.
-
-### Test-Output Cleaner (Vitest / Jest)
-Collapses runs of 3+ consecutive passing test lines into one summary line (`✓ 12 test cases passed`). Failing test names, assertions, expected/received values, failure stacks, and the runner's summary are preserved byte for byte. Only runs when the content is confidently recognized as test-runner output.
-
----
-
-## Privacy
-
-iritoken v0.1 is fully local:
-
-- No telemetry, no analytics, no API calls
-- No cloud processing, no external storage
-- No network connection is ever made
-- No API key is required
-
-Your context text never leaves your machine. The benchmark quality harness does not call any model by default, and the provider interface is never invoked from the library.
-
-## Security boundaries
-
-iritoken is a local text-processing library/CLI, not an HTTP server. It does
-not open sockets, execute SQL, fetch URLs, parse cookies, or manage sessions;
-therefore SQL injection, CSRF, and SSRF have no attack surface inside this
-package. Applications exposing iritoken over HTTP must implement those
-controls at their own trust boundary (parameterized database queries, CSRF
-tokens/SameSite cookies, URL allowlists plus private-network blocking, request
-rate limits, body/time limits, and an edge/WAF for volumetric DDoS).
-
-For resource-exhaustion protection, the library rejects input above 16 Mi
-characters by default. Override it explicitly when appropriate:
-
-```ts
-optimize(untrustedText, { maxInputCharacters: 2_000_000 });
-```
-
-The CLI similarly limits files and stdin to 16 MiB (`--max-input-mb` changes
-the limit), refuses to overwrite its input, refuses output symlinks, creates
-new output files with owner-only permissions, and sanitizes terminal control
-characters in diagnostics.
-
-Please report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
-
----
+Please report vulnerabilities privately using [SECURITY.md](SECURITY.md).
 
 ## Development
 
 ```bash
+git clone https://github.com/lelianto/iritoken.git
+cd iritoken
 npm install
-npm run build        # TypeScript -> dist/
-npm run typecheck    # strict typecheck of src, test, benchmark
-npm run lint         # ESLint for source, tests, and benchmarks
-npm test             # unit + deterministic fuzz/property tests (node:test)
-npm run benchmark:verify # compression, quality, performance, and report
-npm run pack:smoke   # pack, clean install, import API, and execute bin
+
+npm run build
+npm run lint
+npm run typecheck
+npm test
+npm run benchmark:verify
+npm run pack:smoke
 ```
 
-GitHub Actions runs lint, strict typechecking, tests, and packed-artifact
-smoke tests on Node 18, 20, and 22. Separate jobs verify benchmarks and audit
-runtime dependencies. Dependabot checks npm and GitHub Actions dependencies
-weekly. The property suite exercises adversarial Unicode/control input and all
-96 preset/cleaner-override combinations.
-
-## Testing
-
-- Every cleaner is covered for: normal input, empty input, malformed input, very large input, Unicode, source code, content that must NOT be modified, already-optimized input, and repeated execution (idempotence).
-- The optimization pipeline asserts idempotence and asserts output is never larger than input.
-- Deterministic fuzz/property tests cover malformed control sequences, mixed newlines, Unicode (including unpaired surrogates), and every preset/cleaner override combination.
-- The CLI is exercised end-to-end against the built binary.
-
-## Benchmarking
-
-Benchmarking is a first-class feature. All measurements below are generated by actually running `optimize()` against the fixtures in `benchmark/fixtures/` — nothing is hard-coded.
-
-```bash
-npm run benchmark            # compression table (balanced), writes benchmark/results/
-npm run benchmark -- safe    # same, safe preset
-npm run report               # README-ready markdown from real results
-npm run benchmark:quality    # deterministic task-success benchmark
-npm run benchmark:perf       # processing time/memory for 10 KiB..10 MiB
-npm run benchmark:groq       # live Groq usage + task-quality validation
-npm run benchmark:deepseek   # cost-capped DeepSeek V4 Flash validation
-```
-
-The live Groq benchmark reads `GROQ_API_KEY` from the process environment or
-an ignored `.env.local`, verifies that the selected model is active, and runs
-paired original/optimized requests. It records Groq's API-reported
-`usage.prompt_tokens`; API keys and full model answers are never written.
-
-```bash
-npm run benchmark:groq -- --model llama-3.1-8b-instant --trials 3
-```
-
-Use `--pace-ms` to stay within the Groq project's tokens-per-minute limit
-(default: 9000 ms between requests). A secret-free partial checkpoint is
-written after every response so a rate-limit failure remains auditable.
-
-The DeepSeek runner uses `deepseek-v4-flash` with thinking disabled, caps
-responses at 256 tokens, shuffles variants blindly, requests structured JSON,
-and scores normalized per-fact recall. Start with one trial; only repeat when
-the original baseline is strong:
-
-```bash
-npm run benchmark:deepseek -- --trials 1
-npm run benchmark:deepseek -- --task jest-failure-analysis --trials 3
-npm run benchmark:deepseek -- --trials 5 --max-cost-usd 0.02
-```
-
-Latest quality-first result (`deepseek-v4-flash`, thinking disabled, 5 trials /
-70 requests): API-reported input tokens fell 13.77%, while fact recall changed
-from 83.2% to 85.2% (paired mean +2.14pp; task-cluster bootstrap 95% CI 0.00pp
-to +6.43pp). The balanced preset passed the pre-registered -5pp
-non-inferiority margin on this model/task suite. See
-[`benchmark/results/DEEPSEEK.md`](benchmark/results/DEEPSEEK.md).
-The full methodology, historical failed benchmark, quality-first changes, and
-scope limitations are documented in
-[`docs/quality-benchmark.md`](docs/quality-benchmark.md).
-
-### Compression benchmark (from actual execution, balanced preset)
-
-| Fixture             | Original (chars) | Optimized (chars) | Reduction | Token reduction* |
-| --- | ---: | ---: | ---: | ---: |
-| vitest-output       | 1,685 | 1,685 | 0.0% | 0.0% |
-| repetitive-logs     | 2,105 | 1,554 | 26.2% | 25.8% |
-| stack-trace         | 2,616 | 1,660 | 36.5% | 36.8% |
-| npm-install         | 1,990 | 1,787 | 10.2% | 10.0% |
-| jest-output         | 1,166 | 1,166 | 0.0% | 0.0% |
-| tsc-errors          | 1,982 | 1,982 | 0.0% | 0.0% |
-| mixed-agent-context | 1,156 | 1,156 | 0.0% | 0.0% |
-
-\* token figures use the documented `char/4` heuristic and are estimates, **not** exact model counts.
-
-Unique content (e.g. `tsc-errors`, `mixed-agent-context`) is intentionally reduced very little — iritoken does not invent compression (yet). The full generated report lives at [`benchmark/results/REPORT.md`](benchmark/results/REPORT.md).
-
-### Quality benchmark (deterministic verification, balanced preset)
-
-| Run       | Input tokens (est.) | Success | Rate |
-| --- | ---: | ---: | ---: |
-| Baseline  | 2,305 | 7/7 | 100% |
-| iritoken | 2,014 | 7/7 | 100% |
-
-Token reduction (est.): ~12.6% · Success regression: 0pp
-
-Verification is **deterministic**: each task defines facts (error codes, file names, failed-test names, expected/received values, summaries) that must survive optimization. A task succeeds only when every fact is still present.
-
-### Performance (from actual execution)
-
-| Input | Time | Δheap | ms per MiB |
-| --- | ---: | ---: | ---: |
-| 10 KiB  | ~2 ms   | <1 MiB | — |
-| 100 KiB | ~3 ms   | ~1 MiB | ~34 |
-| 1 MiB   | ~33 ms  | ~12 MiB | ~33 |
-| 10 MiB  | ~313 ms | ~117 MiB | ~31 |
-
-Roughly linear behavior across sizes — no accidental O(n²) on large logs.
-
-### Quality benchmark architecture
-
-Compression alone is not the goal. The benchmark is designed so the same task can later run through an LLM using the identical task manifest:
-
-```text
-ORIGINAL CONTEXT   
-    ↓ LLM          OPTIMIZED CONTEXT   
-RESULT A               ↓ LLM           
-                       RESULT B
-```
-
-The provider interface lives in [`benchmark/provider.ts`](benchmark/provider.ts):
-
-```ts
-interface BenchmarkProvider {
-  readonly name: string;
-  run(input: string): Promise<BenchmarkResponse>;
-}
-```
-
-iritoken never calls models. Adapters for DeepSeek, OpenAI, Anthropic, Gemini, OpenRouter, or local models can be added later without coupling the package to any provider. The metric of interest is *cost per successful task*, not raw tokens removed — a config saving 70% tokens that hurts task success is considered worse.
-
----
-
-## Non-goals for v0.1
-
-Not implemented (and intentionally out of scope for the deterministic MVP):
-
-- Embeddings, vector databases, RAG
-- LLM summarization or semantic compression
-- AST code compression
-- Conversation-memory management
-- Coding-agent plugins, IDE extensions, proxy servers, SaaS dashboards
-- Remote telemetry, automatic prompt rewriting
-- MCP server, agent framework
-
-These can be explored only after the deterministic MVP has measurable results.
-
----
+GitHub Actions verifies Node.js 18, 20, and 22, audits production dependencies,
+runs deterministic benchmarks, and installs the generated tarball before a
+release can be published. The manual release workflow defaults to dry-run and
+supports npm provenance.
 
 ## Project structure
 
 ```text
-src/
-├── cleaners/          ansi, whitespace, duplicate-lines, stack-trace, test-output
-├── detectors/         content-type detection
-├── pipeline/          optimize() + presets
-├── stats/             character/token stats
-├── token/             optional token counter
-├── cli/               iritoken CLI
-├── types.ts           public types
-└── index.ts           public entry
-test/                  unit + integration tests
-benchmark/
-├── fixtures/          realistic deterministic fixtures
-├── tasks/             quality-benchmark task manifest
-├── provider.ts        provider-neutral model interface
-├── run.ts             compression benchmark
-├── quality.ts         deterministic success benchmark
-├── performance.ts     processing-time/memory benchmark
-├── report.ts          README-ready markdown from real results
-└── results/           generated measurements (REPORT.md is committed)
+iritoken/
+├── src/
+│   ├── cleaners/          deterministic transformation stages
+│   ├── detectors/         content-type detection
+│   ├── integrations/      provider-neutral message helpers
+│   ├── pipeline/          optimize() and presets
+│   ├── stats/             character and token statistics
+│   ├── token/             counters and tokenizer adapters
+│   ├── cli/               command-line interface
+│   ├── stream.ts          bounded Node Transform
+│   └── index.ts           public API
+├── test/                  unit, integration, security, and property tests
+├── benchmark/             fixtures, tasks, live runners, and reports
+├── docs/                  methodology and integration guides
+└── .github/workflows/     CI and release gates
 ```
+
+## Contributing
+
+Contributions are welcome, especially new real-world fixtures, conservative
+cleaners, tokenizer examples, and provider-neutral quality evaluations.
+
+Before opening a pull request:
+
+1. Add tests for normal, malformed, Unicode, large, unchanged, and repeated input.
+2. Preserve determinism, idempotence, and non-expansion.
+3. Add required facts to the benchmark manifest for new fixtures.
+4. Run `npm run prepublishOnly` and `npm run benchmark:corpus`.
+5. Do not commit API keys, `.env.local`, generated secrets, or model responses.
 
 ## License
 
-Apache-2.0
+Licensed under the [Apache License 2.0](LICENSE). Copyright attributed to dan.
+
+<div align="center">
+  <sub>Built to make every context window count.</sub>
+</div>

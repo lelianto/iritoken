@@ -123,4 +123,28 @@ export const TASKS: BenchmarkTask[] = [
       ],
     },
   },
+  {
+    name: "docker-build-diagnosis",
+    fixture: "docker-build.txt",
+    description: "Identify the failing build stage, source diagnostic, Dockerfile line, and exit code.",
+    verification: {
+      mustContain: ["builder 5/6", "src/server.ts(42,18)", "Dockerfile:18", "exit code: 2"],
+    },
+  },
+  {
+    name: "kubernetes-incident",
+    fixture: "kubernetes-events.txt",
+    description: "Identify the pod, image, health failure, and missing secret.",
+    verification: {
+      mustContain: ["pod/api-7c9d", "api:2.4.1", "statuscode: 503", "api-config"],
+    },
+  },
+  {
+    name: "python-root-cause",
+    fixture: "python-traceback.txt",
+    description: "Identify both exceptions, origin, job, customer, and retry count.",
+    verification: {
+      mustContain: ["KeyError: 'account'", "/app/client.py", "invoice-4821", "customer-91", "5 attempts"],
+    },
+  },
 ];

@@ -48,6 +48,7 @@ export interface PresetOptions {
   duplicateLines: boolean;
   stackTrace: boolean;
   testOutput: boolean;
+  repeatedBlocks: boolean;
 }
 
 export interface OptimizeOptions {
@@ -61,6 +62,25 @@ export interface OptimizeOptions {
    * characters. Set an explicit, smaller value at trust boundaries.
    */
   maxInputCharacters?: number;
+  /** Optional lifecycle observer. It receives metadata only, never input text. */
+  observer?: OptimizeObserver;
+}
+
+export type OptimizationDecisionReason =
+  | "applied"
+  | "disabled-by-preset"
+  | "not-applicable";
+
+export interface OptimizationDecision {
+  cleaner: string;
+  enabled: boolean;
+  changes: number;
+  reason: OptimizationDecisionReason;
+}
+
+export interface OptimizeObserver {
+  onCleaner?(decision: Readonly<OptimizationDecision>): void;
+  onComplete?(stats: Readonly<OptimizeStats>): void;
 }
 
 export interface TokenCounter {
@@ -85,6 +105,8 @@ export interface OptimizeStats {
   transformations: Record<string, number>;
   /** Content category detected for the input. */
   detection: ContentDetection;
+  /** Explainable outcome for every cleaner, including skipped cleaners. */
+  decisions: OptimizationDecision[];
   tokens?: TokenStats;
 }
 

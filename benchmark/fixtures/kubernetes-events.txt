@@ -1,0 +1,9 @@
+LAST SEEN   TYPE      REASON             OBJECT            MESSAGE
+12s         Normal    Scheduled          pod/api-7c9d       Successfully assigned production/api-7c9d to node-03
+10s         Normal    Pulling            pod/api-7c9d       Pulling image "registry.example.com/api:2.4.1"
+8s          Warning   BackOff            pod/api-7c9d       Back-off restarting failed container api
+8s          Warning   BackOff            pod/api-7c9d       Back-off restarting failed container api
+8s          Warning   BackOff            pod/api-7c9d       Back-off restarting failed container api
+7s          Warning   Unhealthy          pod/api-7c9d       Readiness probe failed: HTTP probe failed with statuscode: 503
+6s          Normal    Pulled             pod/api-7c9d       Container image "registry.example.com/api:2.4.1" already present on machine
+5s          Warning   FailedMount        pod/api-7c9d       MountVolume.SetUp failed for volume "config": secret "api-config" not found

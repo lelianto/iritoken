@@ -34,6 +34,9 @@ interface CliOptions {
   help: boolean;
   version: boolean;
   maxInputBytes: number;
+  stdout: boolean;
+  json: boolean;
+  quiet: boolean;
 }
 
 const DISPLAY_OPERATIONS: Array<[string, string]> = [
@@ -42,6 +45,7 @@ const DISPLAY_OPERATIONS: Array<[string, string]> = [
   ["duplicate-lines", "Duplicates"],
   ["stack-trace", "Stack frames"],
   ["test-output", "Test output"],
+  ["repeated-blocks", "Repeated blocks"],
 ];
 
 const EXPLAIN_FRAMES: Record<string, [string, string]> = {
@@ -50,6 +54,7 @@ const EXPLAIN_FRAMES: Record<string, [string, string]> = {
   "duplicate-lines": ["Consecutive duplicate lines", "Groups collapsed:"],
   "stack-trace": ["Repeated stack frames", "Groups collapsed:"],
   "test-output": ["Repeated passing test lines", "Runs collapsed:"],
+  "repeated-blocks": ["Repeated multiline blocks", "Groups collapsed:"],
 };
 
 export function parseArgs(argv: string[]): CliOptions {
@@ -60,6 +65,9 @@ export function parseArgs(argv: string[]): CliOptions {
     help: false,
     version: false,
     maxInputBytes: DEFAULT_MAX_INPUT_BYTES,
+    stdout: false,
+    json: false,
+    quiet: false,
   };
 
   const positional: string[] = [];
@@ -79,6 +87,16 @@ export function parseArgs(argv: string[]): CliOptions {
         break;
       case "--dry-run":
         options.dryRun = true;
+        break;
+      case "--stdout":
+        options.stdout = true;
+        break;
+      case "--json":
+        options.json = true;
+        break;
+      case "-q":
+      case "--quiet":
+        options.quiet = true;
         break;
       case "-o":
       case "--output":
@@ -120,6 +138,15 @@ export function parseArgs(argv: string[]): CliOptions {
   if (positional.length > 1) {
     throw new Error(`Unexpected argument: ${positional[1]}`);
   }
+  if (options.stdout && options.output) {
+    throw new Error("--stdout cannot be combined with --output");
+  }
+  if (options.stdout && options.json) {
+    throw new Error("--stdout cannot be combined with --json");
+  }
+  if (options.dryRun && options.stdout) {
+    throw new Error("--dry-run cannot be combined with --stdout");
+  }
   return options;
 }
 
@@ -135,6 +162,9 @@ Options:
   -o, --output <path>   Write the optimized text to a file
   --preset <name>       safe (default) | balanced | aggressive
   --dry-run             Report statistics without writing output
+  --stdout              Write only optimized text to stdout (Unix filter mode)
+  --json                Write a stable machine-readable result as JSON
+  -q, --quiet           Suppress the human report when using --output
   --max-input-mb <n>    Reject larger input (default: 16 MiB, max: 1024)
   --explain             Explain what would change
   -h, --help            Show this help
@@ -143,6 +173,8 @@ Options:
 Examples:
   iritoken build.log
   npm test 2>&1 | iritoken
+  npm test 2>&1 | iritoken --stdout > optimized.log
+  iritoken build.log --json
   iritoken build.log --output optimized.log
   iritoken build.log --preset balanced --explain
 `;
@@ -319,7 +351,18 @@ export async function mainImpl(argv: string[]): Promise<number> {
     }
   }
 
-  process.stdout.write((options.explain ? renderExplain(input, result) : renderReport(input, result)) + "\n");
+  if (options.stdout) {
+    process.stdout.write(result.text);
+  } else if (options.json) {
+    process.stdout.write(JSON.stringify({
+      schemaVersion: 1,
+      preset: options.preset,
+      text: options.dryRun || options.output ? undefined : result.text,
+      stats: result.stats,
+    }) + "\n");
+  } else if (!(options.quiet && options.output)) {
+    process.stdout.write((options.explain ? renderExplain(input, result) : renderReport(input, result)) + "\n");
+  }
   return 0;
 }
 
