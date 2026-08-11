@@ -57,7 +57,7 @@ runs:
         IRITOKEN_SEGMENTS: ${{ inputs.segments }}
       run: node "${{ github.action_path }}/.github/actions/run.mjs"
     - if: ${{ inputs.upload-artifact == 'true' }}
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
         name: iritoken-optimized-context
         path: ${{ inputs.output }}
