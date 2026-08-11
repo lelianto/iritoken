@@ -247,7 +247,7 @@ const summary = {
 };
 writeFileSync(join(resultsDir, `deepseek-live${resultSuffix}.json`), JSON.stringify({ summary, runs }, null, 2), "utf8");
 writeFileSync(join(resultsDir, `DEEPSEEK${resultSuffix}.md`), [
-  "# TokenSlim live DeepSeek benchmark", "", `- Model: \`${MODEL}\` (thinking disabled)`,
+  "# iritoken live DeepSeek benchmark", "", `- Model: \`${MODEL}\` (thinking disabled)`,
   `- Trials / requests: ${trials} / ${runs.length}`, `- Original input tokens: ${originalInput.toLocaleString("en-US")}`,
   `- Task filter: ${taskFilter ?? "all"}`,
   `- Optimized input tokens: ${optimizedInput.toLocaleString("en-US")}`,

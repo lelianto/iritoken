@@ -6,7 +6,7 @@ describe("security limits", () => {
   it("rejects library input over the configured character limit", () => {
     assert.throws(
       () => optimize("12345", { maxInputCharacters: 4 }),
-      (error) => error instanceof InputLimitError && error.code === "ERR_TOKENSLIM_INPUT_TOO_LARGE",
+      (error) => error instanceof InputLimitError && error.code === "ERR_IRITOKEN_INPUT_TOO_LARGE",
     );
   });
 

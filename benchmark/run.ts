@@ -100,7 +100,7 @@ if (!results.every((r) => r.idempotent)) {
   process.exitCode = 1;
 }
 
-console.log(`TokenSlim compression benchmark (preset: ${preset})`);
+console.log(`iritoken compression benchmark (preset: ${preset})`);
 console.log("");
 console.log(renderTable(results));
 console.log("");

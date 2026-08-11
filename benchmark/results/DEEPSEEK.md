@@ -1,4 +1,4 @@
-# TokenSlim live DeepSeek benchmark
+# iritoken live DeepSeek benchmark
 
 - Model: `deepseek-v4-flash` (thinking disabled)
 - Trials / requests: 5 / 70

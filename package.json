@@ -1,5 +1,5 @@
 {
-  "name": "tokenslim",
+  "name": "iritoken",
   "version": "0.1.0",
   "description": "Deterministic token optimization for AI coding context. Removes low-value tokens without removing useful information — no LLM required.",
   "keywords": [
@@ -32,7 +32,7 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "tokenslim": "./dist/cli/index.js"
+    "iritoken": "./dist/cli/index.js"
   },
   "files": [
     "dist",

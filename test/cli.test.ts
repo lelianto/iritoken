@@ -21,14 +21,14 @@ function runCli(args: string[], stdin?: string): { status: number; stdout: strin
 let dir: string;
 
 before(() => {
-  dir = mkdtempSync(join(tmpdir(), "tokenslim-cli-"));
+  dir = mkdtempSync(join(tmpdir(), "iritoken-cli-"));
 });
 
 after(() => {
   if (dir) rmSync(dir, { recursive: true, force: true });
 });
 
-describe("tokenslim CLI (built)", () => {
+describe("iritoken CLI (built)", () => {
   it("prints usage for --help", () => {
     const r = runCli(["--help"]);
     assert.equal(r.status, 0);
@@ -38,7 +38,7 @@ describe("tokenslim CLI (built)", () => {
   it("prints a version", () => {
     const r = runCli(["--version"]);
     assert.equal(r.status, 0);
-    assert.match(r.stdout, /tokenslim \d+\.\d+\.\d+/);
+    assert.match(r.stdout, /iritoken \d+\.\d+\.\d+/);
   });
 
   it("processes a file and prints a report", () => {
@@ -78,7 +78,7 @@ describe("tokenslim CLI (built)", () => {
     writeFileSync(file, "Connecting...\nConnecting...\nConnecting...\nConnection failed\n");
     const r = runCli([file, "--explain"]);
     assert.equal(r.status, 0);
-    assert.ok(r.stdout.includes("TokenSlim Analysis"));
+    assert.ok(r.stdout.includes("iritoken Analysis"));
     assert.ok(r.stdout.includes("Groups collapsed:"));
     assert.ok(r.stdout.includes("Confidence:"));
   });

@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const temp = mkdtempSync(join(tmpdir(), "tokenslim-pack-"));
+const temp = mkdtempSync(join(tmpdir(), "iritoken-pack-"));
 const npmEnv = { ...process.env, npm_config_cache: join(temp, "npm-cache") };
 
 try {
@@ -22,12 +22,12 @@ try {
 
   execFileSync("npm", ["init", "-y"], { cwd: temp, stdio: "ignore", env: npmEnv });
   execFileSync("npm", ["install", "--ignore-scripts", tarball], { cwd: temp, stdio: "ignore", env: npmEnv });
-  execFileSync(process.execPath, ["--input-type=module", "--eval", 'import { optimize, InputLimitError } from "tokenslim"; const r=optimize("a\\n\\n\\n\\nb"); if (!(r.text === "a\\n\\nb" && InputLimitError)) process.exit(1);'], { cwd: temp });
+  execFileSync(process.execPath, ["--input-type=module", "--eval", 'import { optimize, InputLimitError } from "iritoken"; const r=optimize("a\\n\\n\\n\\nb"); if (!(r.text === "a\\n\\nb" && InputLimitError)) process.exit(1);'], { cwd: temp });
 
-  const bin = join(temp, "node_modules", ".bin", "tokenslim");
+  const bin = join(temp, "node_modules", ".bin", "iritoken");
   assert.ok(existsSync(bin));
-  assert.match(execFileSync(bin, ["--version"], { cwd: temp, encoding: "utf8" }), /^tokenslim 0\.1\.0/);
-  const installed = JSON.parse(readFileSync(join(temp, "node_modules", "tokenslim", "package.json"), "utf8"));
+  assert.match(execFileSync(bin, ["--version"], { cwd: temp, encoding: "utf8" }), /^iritoken 0\.1\.0/);
+  const installed = JSON.parse(readFileSync(join(temp, "node_modules", "iritoken", "package.json"), "utf8"));
   assert.equal(installed.dependencies, undefined, "published package gained runtime dependencies");
   process.stdout.write(`Pack smoke test passed: ${filename}\n`);
   rmSync(tarball, { force: true });

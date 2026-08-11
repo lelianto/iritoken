@@ -1,4 +1,4 @@
-# TokenSlim compression benchmark
+# iritoken compression benchmark
 
 Generated automatically by `npm run benchmark`. Do not edit by hand.
 

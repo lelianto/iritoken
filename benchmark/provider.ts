@@ -1,10 +1,10 @@
 /**
  * Provider-neutral quality-benchmark interface.
  *
- * TokenSlim itself never calls an LLM. This interface exists so a quality
+ * iritoken itself never calls an LLM. This interface exists so a quality
  * benchmark can later run the SAME task against ORIGINAL context and
  * OPTIMIZED context through any model (DeepSeek, OpenAI, Anthropic,
- * Gemini, OpenRouter, local models) without coupling TokenSlim to any
+ * Gemini, OpenRouter, local models) without coupling iritoken to any
  * provider.
  *
  * A minimal implementation could be:
@@ -30,7 +30,7 @@ export interface BenchmarkProvider {
 
   /**
    * Send one context and return the model's completion.
-   * Must never be called from the TokenSlim package itself.
+   * Must never be called from the iritoken package itself.
    */
   run(input: string): Promise<BenchmarkResponse>;
 }

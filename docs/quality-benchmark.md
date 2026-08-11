@@ -1,6 +1,6 @@
 # Quality and token benchmark
 
-This document records the live quality validation for TokenSlim's
+This document records the live quality validation for iritoken's
 quality-first `balanced` preset. The objective is not maximum compression; it
 is measurable token reduction without a material loss in useful facts.
 
@@ -44,7 +44,7 @@ and rubric. It is not a universal guarantee for every model or workload.
 | Vitest failure analysis | 75.0% | 75.0% | 0/5 → 0/5 |
 
 Low absolute scores for some tasks affect both variants and reflect model and
-rubric difficulty. The paired comparison is the relevant measure of TokenSlim's
+rubric difficulty. The paired comparison is the relevant measure of iritoken's
 effect.
 
 ## Methodology

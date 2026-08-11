@@ -3,7 +3,7 @@ import type { TokenCounter } from "../types.js";
 /**
  * Optional token measurement layer.
  *
- * TokenSlim never guesses model-specific token counts. When the caller
+ * iritoken never guesses model-specific token counts. When the caller
  * supplies a real tokenizer, stats include token figures marked exact.
  *
  * `estimateTokens` is a rough, documented heuristic (chars / 4 averaged

@@ -158,7 +158,7 @@ const summary = {
 };
 writeFileSync(join(ROOT, "results", "groq-live.json"), JSON.stringify({ summary, runs }, null, 2), "utf8");
 writeFileSync(join(ROOT, "results", "GROQ.md"), [
-  "# TokenSlim live Groq benchmark", "",
+  "# iritoken live Groq benchmark", "",
   `- Model: \`${model}\``, `- Preset: balanced`, `- Trials: ${trials}`,
   `- Requests: ${runs.length}`, `- Original input tokens: ${originalTokens.toLocaleString("en-US")}`,
   `- Optimized input tokens: ${optimizedTokens.toLocaleString("en-US")}`,

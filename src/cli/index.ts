@@ -123,11 +123,11 @@ export function parseArgs(argv: string[]): CliOptions {
   return options;
 }
 
-const USAGE = `TokenSlim - deterministic token optimization for AI coding context
+const USAGE = `iritoken - deterministic token optimization for AI coding context
 
 Usage:
-  tokenslim [file] [options]
-  command | tokenslim [options]
+  iritoken [file] [options]
+  command | iritoken [options]
 
 Reads a file, or stdin when no file is given and stdin is piped.
 
@@ -141,10 +141,10 @@ Options:
   -v, --version         Show the version
 
 Examples:
-  tokenslim build.log
-  npm test 2>&1 | tokenslim
-  tokenslim build.log --output optimized.log
-  tokenslim build.log --preset balanced --explain
+  iritoken build.log
+  npm test 2>&1 | iritoken
+  iritoken build.log --output optimized.log
+  iritoken build.log --preset balanced --explain
 `;
 
 function formatBytes(bytes: number): string {
@@ -213,7 +213,7 @@ function writeOutputSecurely(inputPath: string | undefined, outputPath: string, 
 function renderReport(original: string, result: OptimizeResult): string {
   const s = result.stats;
   const rows: string[] = [
-    "TokenSlim",
+    "iritoken",
     "",
     `Original size     ${formatBytes(s.originalCharacters).padEnd(10)} ${formatCount(s.originalCharacters)} chars`,
     `Optimized size    ${formatBytes(s.optimizedCharacters).padEnd(10)} ${formatCount(s.optimizedCharacters)} chars`,
@@ -244,7 +244,7 @@ function renderReport(original: string, result: OptimizeResult): string {
 
 function renderExplain(original: string, result: OptimizeResult): string {
   const s = result.stats;
-  const rows: string[] = ["TokenSlim Analysis", ""];
+  const rows: string[] = ["iritoken Analysis", ""];
 
   let wroteAny = false;
   for (const [id, [title, verb]] of Object.entries(EXPLAIN_FRAMES)) {
@@ -275,7 +275,7 @@ export async function mainImpl(argv: string[]): Promise<number> {
   try {
     options = parseArgs(argv);
   } catch (error) {
-    process.stderr.write(`tokenslim: ${safeDiagnostic(error)}\n\n${USAGE}`);
+    process.stderr.write(`iritoken: ${safeDiagnostic(error)}\n\n${USAGE}`);
     return 2;
   }
 
@@ -291,7 +291,7 @@ export async function mainImpl(argv: string[]): Promise<number> {
     } catch {
       // fall back to the constant when package.json is not adjacent
     }
-    process.stdout.write(`tokenslim ${version}\n`);
+    process.stdout.write(`iritoken ${version}\n`);
     return 0;
   }
 
@@ -304,7 +304,7 @@ export async function mainImpl(argv: string[]): Promise<number> {
   try {
     input = await readInput(options.file, options.maxInputBytes);
   } catch (error) {
-    process.stderr.write(`tokenslim: could not read input: ${safeDiagnostic(error)}\n`);
+    process.stderr.write(`iritoken: could not read input: ${safeDiagnostic(error)}\n`);
     return 1;
   }
 
@@ -314,7 +314,7 @@ export async function mainImpl(argv: string[]): Promise<number> {
     try {
       writeOutputSecurely(options.file, options.output, result.text);
     } catch (error) {
-      process.stderr.write(`tokenslim: could not write output: ${safeDiagnostic(error)}\n`);
+      process.stderr.write(`iritoken: could not write output: ${safeDiagnostic(error)}\n`);
       return 1;
     }
   }

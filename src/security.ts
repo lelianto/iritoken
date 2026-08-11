@@ -5,7 +5,7 @@ export const DEFAULT_MAX_INPUT_CHARACTERS = 16 * 1024 * 1024;
 export const DEFAULT_MAX_INPUT_BYTES = 16 * 1024 * 1024;
 
 export class InputLimitError extends RangeError {
-  readonly code = "ERR_TOKENSLIM_INPUT_TOO_LARGE";
+  readonly code = "ERR_IRITOKEN_INPUT_TOO_LARGE";
 
   constructor(actual: number, maximum: number, unit: "characters" | "bytes") {
     super(`input is too large (${actual} ${unit}); maximum is ${maximum} ${unit}`);

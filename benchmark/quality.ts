@@ -2,7 +2,7 @@
  * Quality benchmark (deterministic verification).
  *
  * For every task defined in benchmark/tasks/ this runs the SAME verification
- * against (a) the ORIGINAL context and (b) the TokenSlim-optimized context.
+ * against (a) the ORIGINAL context and (b) the iritoken-optimized context.
  * A task succeeds only when every required fact survives.
  *
  * This is an information-preservation proxy: it answers "did optimizing the
@@ -90,11 +90,11 @@ const optimizedTokens = optimized.reduce((a, v) => a + v.inputTokens, 0);
 const regressionPp =
   (baselineOk / baseline.length) * 100 - (optimizedOk / optimized.length) * 100;
 
-console.log(`TokenSlim quality benchmark (preset: ${preset})`);
+console.log(`iritoken quality benchmark (preset: ${preset})`);
 console.log("");
 console.log("Baseline");
 console.log(renderVerdicts("", baseline).trimStart());
-console.log("TokenSlim");
+console.log("iritoken");
 console.log(renderVerdicts("", optimized).trimStart());
 console.log(
   [

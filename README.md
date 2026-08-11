@@ -1,10 +1,10 @@
-# TokenSlim
+# iritoken
 
-> TokenSlim removes deterministic noise from AI coding context before it reaches an LLM.
+> iritoken removes deterministic noise from AI coding context before it reaches an LLM.
 
 Don't spend AI tokens on information your model doesn't need.
 
-TokenSlim is a lightweight, **deterministic** preprocessing library (and CLI) that reduces unnecessary tokens from AI coding context — CLI output, TypeScript compiler errors, test results, stack traces, repetitive logs, ANSI formatting, and stray whitespace — **without using an LLM**.
+iritoken is a lightweight, **deterministic** preprocessing library (and CLI) that reduces unnecessary tokens from AI coding context — CLI output, TypeScript compiler errors, test results, stack traces, repetitive logs, ANSI formatting, and stray whitespace — **without using an LLM**.
 
 Everything is local, stateless, and cheap to run.
 
@@ -24,26 +24,26 @@ same input + same configuration = same output
 
 AI coding workflows repeatedly send large, noisy contexts to LLMs: `npm test` walls, redundant stack frames, `Connecting...` repeated hundreds of times, `\x1b[31m` color codes, trailing whitespace. A large share of that text carries almost no information. You pay for those tokens on every call.
 
-TokenSlim v0.1 removes the obviously-low-value parts while preserving the information a model actually needs — like error types, file names, failed test names, expected/received values, and stack frames.
+iritoken v0.1 removes the obviously-low-value parts while preserving the information a model actually needs — like error types, file names, failed test names, expected/received values, and stack frames.
 
 The core safety rule:
 
 > When uncertain, preserve the original information.
 
-TokenSlim prefers lower compression over destructive compression.
+iritoken prefers lower compression over destructive compression.
 
 ---
 
 ## Install
 
 ```bash
-npm install tokenslim
+npm install iritoken
 ```
 
 ## Library usage
 
 ```ts
-import { optimize } from "tokenslim";
+import { optimize } from "iritoken";
 
 const result = optimize(rawContext);
 
@@ -103,7 +103,7 @@ optimize(context, {
 
 When a counter is provided, stats additionally include `originalTokens`, `optimizedTokens`, `tokensRemoved`, and `tokenReductionPercentage`.
 
-TokenSlim **never claims exact model token savings** from character counts. The CLI and benchmarks use a documented `char/4` heuristic for display and label it as an estimate.
+iritoken **never claims exact model token savings** from character counts. The CLI and benchmarks use a documented `char/4` heuristic for display and label it as an estimate.
 
 ### Idempotence
 
@@ -121,28 +121,28 @@ An already-optimized fixture is not reduced further (asserted in tests and by th
 
 ```bash
 # summary report
-tokenslim build.log
+iritoken build.log
 
 # write the optimized text to a file
-tokenslim build.log --output optimized.log
+iritoken build.log --output optimized.log
 
 # read from stdin — pipe any CLI tool's output in
-npm test 2>&1 | tokenslim
+npm test 2>&1 | iritoken
 
 # choose a preset
-tokenslim build.log --preset balanced
+iritoken build.log --preset balanced
 
 # stats without writing anything
-tokenslim build.log --dry-run
+iritoken build.log --dry-run
 
 # explain what changed
-tokenslim build.log --explain
+iritoken build.log --explain
 ```
 
 ### Example report
 
 ```text
-TokenSlim
+iritoken
 
 Original size     84.2 KB    86212 chars
 Optimized size    51.8 KB    53024 chars
@@ -160,7 +160,7 @@ Test output         0
 ### Explain mode
 
 ```text
-TokenSlim Analysis
+iritoken Analysis
 
 ANSI escape sequences
 Removed: 142
@@ -239,7 +239,7 @@ Collapses runs of 3+ consecutive passing test lines into one summary line (`✓ 
 
 ## Privacy
 
-TokenSlim v0.1 is fully local:
+iritoken v0.1 is fully local:
 
 - No telemetry, no analytics, no API calls
 - No cloud processing, no external storage
@@ -250,10 +250,10 @@ Your context text never leaves your machine. The benchmark quality harness does 
 
 ## Security boundaries
 
-TokenSlim is a local text-processing library/CLI, not an HTTP server. It does
+iritoken is a local text-processing library/CLI, not an HTTP server. It does
 not open sockets, execute SQL, fetch URLs, parse cookies, or manage sessions;
 therefore SQL injection, CSRF, and SSRF have no attack surface inside this
-package. Applications exposing TokenSlim over HTTP must implement those
+package. Applications exposing iritoken over HTTP must implement those
 controls at their own trust boundary (parameterized database queries, CSRF
 tokens/SameSite cookies, URL allowlists plus private-network blocking, request
 rate limits, body/time limits, and an edge/WAF for volumetric DDoS).
@@ -361,14 +361,14 @@ scope limitations are documented in
 
 \* token figures use the documented `char/4` heuristic and are estimates, **not** exact model counts.
 
-Unique content (e.g. `tsc-errors`, `mixed-agent-context`) is intentionally reduced very little — TokenSlim does not invent compression (yet). The full generated report lives at [`benchmark/results/REPORT.md`](benchmark/results/REPORT.md).
+Unique content (e.g. `tsc-errors`, `mixed-agent-context`) is intentionally reduced very little — iritoken does not invent compression (yet). The full generated report lives at [`benchmark/results/REPORT.md`](benchmark/results/REPORT.md).
 
 ### Quality benchmark (deterministic verification, balanced preset)
 
 | Run       | Input tokens (est.) | Success | Rate |
 | --- | ---: | ---: | ---: |
 | Baseline  | 2,305 | 7/7 | 100% |
-| TokenSlim | 2,014 | 7/7 | 100% |
+| iritoken | 2,014 | 7/7 | 100% |
 
 Token reduction (est.): ~12.6% · Success regression: 0pp
 
@@ -405,7 +405,7 @@ interface BenchmarkProvider {
 }
 ```
 
-TokenSlim never calls models. Adapters for DeepSeek, OpenAI, Anthropic, Gemini, OpenRouter, or local models can be added later without coupling the package to any provider. The metric of interest is *cost per successful task*, not raw tokens removed — a config saving 70% tokens that hurts task success is considered worse.
+iritoken never calls models. Adapters for DeepSeek, OpenAI, Anthropic, Gemini, OpenRouter, or local models can be added later without coupling the package to any provider. The metric of interest is *cost per successful task*, not raw tokens removed — a config saving 70% tokens that hurts task success is considered worse.
 
 ---
 
@@ -434,7 +434,7 @@ src/
 ├── pipeline/          optimize() + presets
 ├── stats/             character/token stats
 ├── token/             optional token counter
-├── cli/               tokenslim CLI
+├── cli/               iritoken CLI
 ├── types.ts           public types
 └── index.ts           public entry
 test/                  unit + integration tests

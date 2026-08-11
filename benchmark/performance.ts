@@ -1,7 +1,7 @@
 /**
  * Performance benchmark.
  *
- * Measures TokenSlim's own processing cost on deterministic inputs of
+ * Measures iritoken's own processing cost on deterministic inputs of
  * increasing size (10 KB, 100 KB, 1 MB, 10 MB) to catch accidental O(n²)
  * behaviour. Runtime memory and processing time are measured from actual
  * execution; inputs come from a seeded generator so runs are reproducible.
@@ -78,7 +78,7 @@ export function runPerformance(preset: PresetName): PerfResult[] {
 const preset = ((process.argv[2] as PresetName | undefined) ?? "balanced") as PresetName;
 const results = runPerformance(preset);
 
-console.log(`TokenSlim performance benchmark (preset: ${preset})`);
+console.log(`iritoken performance benchmark (preset: ${preset})`);
 console.log("");
 console.log("Input          Output         Time     Δheap    ms/MiB");
 for (const r of results) {
