@@ -13,9 +13,11 @@
   <p>
     <a href="https://www.npmjs.com/package/iritoken"><img src="https://img.shields.io/npm/v/iritoken?style=flat-square&color=2563eb" alt="npm version" /></a>
     <a href="https://github.com/lelianto/iritoken/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/lelianto/iritoken/ci.yml?branch=main&style=flat-square&label=CI" alt="CI status" /></a>
+    <a href="https://scorecard.dev/viewer/?uri=github.com/lelianto/iritoken"><img src="https://api.scorecard.dev/projects/github.com/lelianto/iritoken/badge" alt="OpenSSF Scorecard" /></a>
     <a href="https://badge.socket.dev/npm/package/iritoken/0.2.0"><img src="https://badge.socket.dev/npm/package/iritoken/0.2.0" alt="Socket security score" /></a>
-    <a href="https://bundlephobia.com/package/iritoken@0.2.0"><img src="https://img.shields.io/bundlephobia/minzip/iritoken@0.2.0?style=flat-square" alt="minified and gzipped bundle size" /></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-7c3aed?style=flat-square" alt="Apache 2.0 license" /></a>
+    <a href="https://bundlephobia.com/package/iritoken"><img src="https://img.shields.io/bundlephobia/minzip/iritoken?style=flat-square" alt="minified and gzipped bundle size" /></a>
+    <a href="https://www.npmjs.com/package/iritoken"><img src="https://img.shields.io/node/v/iritoken?style=flat-square&color=339933" alt="supported Node.js version" /></a>
+    <a href="LICENSE"><img src="https://img.shields.io/npm/l/iritoken?style=flat-square&color=7c3aed" alt="npm license" /></a>
     <a href="https://www.npmjs.com/package/iritoken"><img src="https://img.shields.io/npm/dm/iritoken?style=flat-square&color=0f766e" alt="npm downloads" /></a>
     <img src="https://img.shields.io/badge/dependencies-0-16a34a?style=flat-square" alt="zero runtime dependencies" />
   </p>
@@ -164,7 +166,8 @@ iritoken build.log --preset balanced --explain
 
 `--stdout` writes only optimized text. Human reports never contaminate the
 pipeline. `--json` uses a top-level `schemaVersion` so automation can validate
-the response format.
+the response format, and reports UTF-8 byte counts independently from character
+and optional exact-token counts.
 
 ## Library API
 
@@ -281,7 +284,7 @@ provider SDK:
 ```ts
 import { optimizeMessages } from "iritoken";
 
-const { messages, stats } = optimizeMessages(request.messages, {
+const { messages, stats, messageStats, totalStats } = optimizeMessages(request.messages, {
   preset: "balanced",
   roles: ["tool", "user"]
 });
@@ -289,6 +292,9 @@ const { messages, stats } = optimizeMessages(request.messages, {
 
 The input array is never mutated. By default, only `user` and `tool` messages
 are optimized; system instructions and assistant messages are copied unchanged.
+`stats` preserves the original ordered result shape, `messageStats` identifies
+the source index and role, and `totalStats` aggregates savings and cleaner
+counts across optimized messages.
 
 ### Node streams
 
@@ -372,13 +378,15 @@ fixtures. Compression is useful only when task quality survives.
 
 | Metric | Result |
 | --- | ---: |
-| Quality tasks | **10/10 → 10/10** |
+| Quality tasks | **13/13 → 13/13** |
 | Success regression | **0 percentage points** |
-| Estimated input tokens | **2,701 → 2,396** |
-| Estimated token reduction | **11.3%** |
-| Balanced corpus character reduction | **12.0%** |
-| Corpus regression matrix | **10 tasks × 3 presets passed** |
-| Unit and integration tests | **117/117 passed** |
+| Estimated input tokens | **2,759 → 2,454** |
+| Estimated token reduction | **11.1%** |
+| Balanced corpus character reduction | **12.7%** |
+| Corpus regression matrix | **13 tasks × 3 presets passed** |
+| Semantic invariants | **21/21 passed** |
+| Terminal eligibility | **100% recall, 100% specificity** |
+| Unit and integration tests | **134/134 passed** |
 
 The deterministic corpus includes npm, TypeScript, Vitest, Jest, stack traces,
 repetitive logs, mixed agent context, Docker, Kubernetes, and Python failures.
@@ -406,14 +414,18 @@ recorded with the report so the result can be traced to exact fresh inputs.
 
 ### Performance
 
-Latest balanced-preset run:
+Latest isolated balanced-preset run (median of three processes):
 
-| Input | Time | Heap change | Throughput cost |
+| Input | Time | Peak RSS | Throughput cost |
 | --- | ---: | ---: | ---: |
-| 10 KiB | ~2.2 ms | <1 MiB | ~227 ms/MiB |
-| 100 KiB | ~3.7 ms | <1 MiB | ~38 ms/MiB |
-| 1 MiB | ~32 ms | ~5 MiB | ~32 ms/MiB |
-| 10 MiB | ~256 ms | ~83 MiB | ~26 ms/MiB |
+| 10 KiB | ~2.2 ms | ~75.0 MiB | ~228 ms/MiB |
+| 100 KiB | ~5.6 ms | ~76.0 MiB | ~57 ms/MiB |
+| 1 MiB | ~25.3 ms | ~89.7 MiB | ~25 ms/MiB |
+| 10 MiB | ~227.7 ms | ~231.5 MiB | ~23 ms/MiB |
+
+For a 12 MiB terminal workload, the incremental transform used ~89.4 MiB peak
+RSS versus ~276.2 MiB for the generic buffered transform while producing the
+same output size.
 
 See the [generated compression report](benchmark/results/REPORT.md) and
 [quality methodology](docs/quality-benchmark.md) for fixtures, limitations,
@@ -448,9 +460,10 @@ Resource-exhaustion and filesystem protections include:
 - 16 Mi-character library input limit by default
 - 16 MiB CLI and stream input limit by default
 - bounded stdin accumulation
-- refusal to overwrite the input file
-- refusal to write through output symlinks
-- owner-only permissions for new CLI output files
+- rejection of symlink and non-regular input/output paths
+- refusal to overwrite the input through the same path or a hard-link alias
+- exclusive owner-only temporary output followed by atomic rename
+- removal of OSC clipboard, C1, DCS, SOS, PM, APC, and partial escape sequences
 - sanitized diagnostic messages
 
 Applications exposing `iritoken` over HTTP must still implement authentication,
