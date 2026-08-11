@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Add `createIritoken()` as a deterministic, stage-toggleable middleware with
+  typed context importance, dependency-aware selection, fail-open token budgets,
+  output-policy metadata, and a per-unit decision ledger.
+- Make hard budgets retain every required item even when the requested target is
+  impossible, and report required-token pressure instead of silently discarding
+  mandatory context.
+- Add a versioned DeepSeek V4 Flash hypothesis benchmark covering six coding and
+  conversation workload categories, 0/25/50/60/70/80/90 targets, ablations,
+  provider-reported input/output/total tokens, cache-aware cost accounting,
+  deterministic scoring, cluster-aware uncertainty, and honest frontier states.
+- Document token-reduction research, DeepSeek API/accounting facts, experimental
+  controls, anti-gaming rules, and the evidence boundary for any 50–90% claim.
+- Add a dated competitor landscape covering Tamp, Tokenade, Klood, FastContext,
+  RTK, and the requirements for a fair head-to-head benchmark.
+
 ## 0.4.0 - 2026-08-11
 
 - Add `optimizeContext()` with structured, command-aware, and generic routing.

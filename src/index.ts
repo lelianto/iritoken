@@ -16,6 +16,8 @@ export { SemanticCache } from "./cache/semantic.js";
 export { fitTokenBudget } from "./context/budget.js";
 export { rankContext } from "./context/ranking.js";
 export { compactConversation } from "./context/conversation.js";
+export { classifyContextUnit, classifyContextUnits } from "./context/classification.js";
+export { createIritoken } from "./pipeline/iritoken.js";
 export { routeModel } from "./routing/model.js";
 export { createOpenAICompatibleAdapter, createDeepSeekAdapter } from "./providers/openai-compatible.js";
 export { prepareCacheAwarePrompt, cacheHitPercentage } from "./prompt/cache.js";
@@ -67,6 +69,27 @@ export type { SemanticCacheHit } from "./cache/semantic.js";
 export type { BudgetItem, BudgetResult, BudgetOptions } from "./context/budget.js";
 export type { RankableContext, RankedContext } from "./context/ranking.js";
 export type { CompactConversationOptions, CompactConversationResult } from "./context/conversation.js";
+export type {
+  ClassifiedContextUnit,
+  ContextImportance,
+  ContextMetadataValue,
+  ContextUnit,
+  ContextUnitKind,
+} from "./context/classification.js";
+export type {
+  Iritoken,
+  IritokenLedgerEntry,
+  IritokenMetrics,
+  IritokenOptions,
+  IritokenOutputPolicy,
+  IritokenOutputPolicyOptions,
+  IritokenRequest,
+  IritokenResult,
+  IritokenStageAction,
+  IritokenStageDecision,
+  IritokenStageName,
+  IritokenStageReport,
+} from "./pipeline/iritoken.js";
 export type { ModelRoute, ModelRoutingRequest, ModelRoutingDecision } from "./routing/model.js";
 export type { ProviderAdapter, ProviderCompletion, ProviderUsage, OpenAICompatibleAdapterOptions } from "./providers/openai-compatible.js";
 export type { CacheAwarePrompt } from "./prompt/cache.js";

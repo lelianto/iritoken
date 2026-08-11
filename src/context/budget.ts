@@ -13,11 +13,21 @@ export interface BudgetResult<T = unknown> {
   omitted: Array<BudgetItem<T> & { tokens: number }>;
   usedTokens: number;
   budgetTokens: number;
+  /** Total tokens occupied by items that the caller marked as required. */
+  requiredTokens: number;
+  /** Whether every required item can fit inside the requested budget. */
+  targetAchievable: boolean;
 }
 
 export interface BudgetOptions { maxItems?: number }
 
-/** Select required items first, then maximize relevance per token within a hard budget. */
+/**
+ * Retain every required item, then fill remaining space by relevance per token.
+ *
+ * If required content alone exceeds the requested budget, the result deliberately
+ * exceeds that budget and reports `targetAchievable: false`. Required information
+ * is never discarded merely to satisfy a numeric compression target.
+ */
 export function fitTokenBudget<T>(
   items: readonly BudgetItem<T>[],
   budgetTokens: number,
@@ -40,24 +50,34 @@ export function fitTokenBudget<T>(
   if (measured.some((item) => !Number.isSafeInteger(item.tokens) || item.tokens < 0)) {
     throw new RangeError("token counter must return non-negative safe integers");
   }
-  const ordered = measured
+  const required = measured.filter((item) => item.required);
+  const optional = measured.filter((item) => !item.required);
+  const requiredTokens = required.reduce((total, item) => total + item.tokens, 0);
+  if (!Number.isSafeInteger(requiredTokens)) {
+    throw new RangeError("required token total exceeds the safe integer range");
+  }
+  const targetAchievable = requiredTokens <= budgetTokens;
+  const ordered = optional
     .map((item, index) => ({ item, index }))
     .sort((left, right) =>
-      Number(Boolean(right.item.required)) - Number(Boolean(left.item.required))
-      || (right.item.score / Math.max(1, right.item.tokens)) - (left.item.score / Math.max(1, left.item.tokens))
+      (right.item.score / Math.max(1, right.item.tokens)) - (left.item.score / Math.max(1, left.item.tokens))
       || right.item.score - left.item.score
       || left.index - right.index);
-  const selectedIds = new Set<string>();
-  let usedTokens = 0;
-  for (const { item } of ordered) {
-    if (usedTokens + item.tokens > budgetTokens) continue;
-    selectedIds.add(item.id);
-    usedTokens += item.tokens;
+  const selectedIds = new Set(required.map((item) => item.id));
+  let usedTokens = requiredTokens;
+  if (targetAchievable) {
+    for (const { item } of ordered) {
+      if (usedTokens + item.tokens > budgetTokens) continue;
+      selectedIds.add(item.id);
+      usedTokens += item.tokens;
+    }
   }
   return {
     selected: measured.filter((item) => selectedIds.has(item.id)),
     omitted: measured.filter((item) => !selectedIds.has(item.id)),
     usedTokens,
     budgetTokens,
+    requiredTokens,
+    targetAchievable,
   };
 }

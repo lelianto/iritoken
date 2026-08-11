@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "asOf": "2026-08-11",
+  "provider": "deepseek",
+  "requestedModel": "deepseek-v4-flash",
+  "modelVersionLabel": "DeepSeek-V4-Flash-0731",
+  "baseUrl": "https://api.deepseek.com",
+  "endpoint": "/chat/completions",
+  "thinking": false,
+  "temperature": 0,
+  "maxOutputTokens": 2048,
+  "responseFormat": "json_object",
+  "contextLengthTokens": 1000000,
+  "maximumOutputTokensDocumented": 384000,
+  "pricesUsdPerMillionTokens": {
+    "inputCacheHit": 0.0028,
+    "inputCacheMiss": 0.14,
+    "output": 0.28
+  },
+  "sources": [
+    {
+      "kind": "official-models-and-pricing",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing",
+      "supports": [
+        "model identifier",
+        "base URL",
+        "context and output limits",
+        "JSON output support",
+        "cache-hit input price",
+        "cache-miss input price",
+        "output price"
+      ]
+    },
+    {
+      "kind": "official-chat-completions-schema",
+      "url": "https://api-docs.deepseek.com/api/create-chat-completion",
+      "supports": [
+        "chat completions endpoint",
+        "thinking switch",
+        "model parameter",
+        "max_tokens"
+      ]
+    },
+    {
+      "kind": "official-model-list-schema",
+      "url": "https://api-docs.deepseek.com/api/list-models",
+      "supports": ["runtime model availability validation"]
+    }
+  ],
+  "caveats": [
+    "DeepSeek states that product prices can change; every live report must retain this snapshot and its as-of date.",
+    "The requested model is an alias unless the response exposes a more specific returned model or system fingerprint; both are recorded per run.",
+    "Provider token usage is authoritative for evidence. Local token estimates are used only to configure optimization targets and dry-run diagnostics."
+  ]
+}

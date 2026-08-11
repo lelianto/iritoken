@@ -11,6 +11,7 @@ export interface CompactConversationOptions extends OptimizeOptions {
   query?: string;
   preserveRoles?: readonly string[];
   keepRecent?: number;
+  recencyHalfLifeMessages?: number;
   maxMessages?: number;
   maxTotalCharacters?: number;
 }
@@ -20,14 +21,20 @@ export interface CompactConversationResult<T extends ContextMessage> {
   originalTokens: number;
   compactedTokens: number;
   budgetTokens: number;
+  requiredTokens: number;
+  targetAchievable: boolean;
 }
 
-/** Compress message bodies, rank history, and omit low-value turns to meet a hard token budget. */
+/**
+ * Compress message bodies, rank history, and omit low-value turns toward a
+ * requested budget. Protected messages may deliberately exceed that budget.
+ */
 export function compactConversation<T extends ContextMessage>(
   messages: readonly T[], options: CompactConversationOptions,
 ): CompactConversationResult<T> {
-  const { tokenCounter, budgetTokens, query = messages.at(-1)?.content ?? "", preserveRoles = ["system"], keepRecent = 2, maxMessages = 1000, maxTotalCharacters = DEFAULT_MAX_INPUT_CHARACTERS, ...optimizeOptions } = options;
+  const { tokenCounter, budgetTokens, query = messages.at(-1)?.content ?? "", preserveRoles = ["system"], keepRecent = 2, recencyHalfLifeMessages = 4, maxMessages = 1000, maxTotalCharacters = DEFAULT_MAX_INPUT_CHARACTERS, ...optimizeOptions } = options;
   if (!Number.isSafeInteger(keepRecent) || keepRecent < 0) throw new RangeError("keepRecent must be a non-negative safe integer");
+  if (!Number.isFinite(recencyHalfLifeMessages) || recencyHalfLifeMessages <= 0) throw new RangeError("recencyHalfLifeMessages must be positive");
   if (!Number.isSafeInteger(maxMessages) || maxMessages < 1) throw new RangeError("maxMessages must be a positive safe integer");
   if (!Number.isSafeInteger(maxTotalCharacters) || maxTotalCharacters < 0) throw new RangeError("maxTotalCharacters must be a non-negative safe integer");
   if (messages.length > maxMessages) throw new RangeError(`message count exceeds maximum ${maxMessages}`);
@@ -36,7 +43,12 @@ export function compactConversation<T extends ContextMessage>(
     totalCharacters += message.content.length;
     if (!Number.isSafeInteger(totalCharacters) || totalCharacters > maxTotalCharacters) throw new InputLimitError(totalCharacters, maxTotalCharacters, "characters");
   }
-  const ranked = rankContext(query, messages.map((message, index) => ({ id: String(index), text: message.content, priority: preserveRoles.includes(message.role) ? 1 : undefined, timestamp: index })), { maxCandidates: maxMessages, maxTotalCharacters });
+  const ranked = rankContext(query, messages.map((message, index) => ({ id: String(index), text: message.content, priority: preserveRoles.includes(message.role) ? 1 : undefined, ordinal: index })), {
+    newestOrdinal: Math.max(0, messages.length - 1),
+    recencyHalfLifeItems: recencyHalfLifeMessages,
+    maxCandidates: maxMessages,
+    maxTotalCharacters,
+  });
   const scores = new Map(ranked.map((item) => [Number(item.id), item.score]));
   const recentStart = Math.max(0, messages.length - keepRecent);
   const optimized = messages.map((message) => ({ ...message, content: preserveRoles.includes(message.role) ? message.content : optimize(message.content, optimizeOptions).text }));
@@ -49,6 +61,9 @@ export function compactConversation<T extends ContextMessage>(
     messages: optimized.filter((_message, index) => selected.has(index)),
     omittedIndices: optimized.map((_message, index) => index).filter((index) => !selected.has(index)),
     originalTokens: messages.reduce((total, message) => total + tokenCounter.count(message.content), 0),
-    compactedTokens: fitted.usedTokens, budgetTokens,
+    compactedTokens: fitted.usedTokens,
+    budgetTokens,
+    requiredTokens: fitted.requiredTokens,
+    targetAchievable: fitted.targetAchievable,
   };
 }
