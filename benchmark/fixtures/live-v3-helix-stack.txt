@@ -1,0 +1,10 @@
+SnapshotFenceError: snapshot generation crossed a sealed epoch
+workspace=helix-62 trace=trace_HX7P31 epoch=991
+    at acquireFence (src/snapshot/fence.ts:143:11)
+    at acquireFence (src/snapshot/fence.ts:143:11)
+    at acquireFence (src/snapshot/fence.ts:143:11)
+    at acquireFence (src/snapshot/fence.ts:143:11)
+    at materializeSnapshot (src/snapshot/materialize.ts:88:19)
+    at runWorkspaceJob (src/worker/workspace.ts:51:7)
+Caused by: remote epoch advanced to 992 while local epoch remained 991
+

@@ -1,0 +1,10 @@
+[08:42:10.101] INFO consumer group=topaz-reconciler-4 partition=27 state=polling
+[08:42:10.201] INFO consumer group=topaz-reconciler-4 partition=27 state=polling
+[08:42:10.301] INFO consumer group=topaz-reconciler-4 partition=27 state=polling
+[08:42:10.401] INFO consumer group=topaz-reconciler-4 partition=27 state=polling
+[08:42:11.000] INFO checkpoint partition=27 offset=884219 persisted=true
+[08:42:11.050] WARN broker retry=1 backoff_ms=250
+[08:42:11.300] WARN broker retry=2 backoff_ms=500
+[08:42:11.800] ERROR broker rejected commit code=BRK-5921 retriable=false
+[08:42:11.801] ERROR stream halted consumer=topaz-reconciler-4 partition=27
+

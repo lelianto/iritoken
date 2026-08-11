@@ -124,6 +124,52 @@ describe("iritoken CLI (built)", () => {
     assert.ok(Array.isArray(value.stats.decisions));
   });
 
+  it("keeps JSON v1 compatible and exposes policy results in JSON v2", () => {
+    const input = "\x1b[31mERROR\x1b[0m\n";
+    const legacy = JSON.parse(runCli(["--json"], input).stdout) as { schemaVersion: number };
+    assert.equal(legacy.schemaVersion, 1);
+
+    const r = runCli([
+      "--check", "--min-reduction", "1", "--max-output-bytes", "10",
+      "--require-detection", "unknown", "--json-version", "2",
+    ], input);
+    assert.equal(r.status, 0);
+    const value = JSON.parse(r.stdout) as {
+      schemaVersion: number;
+      policy: { checked: boolean; passed: boolean; failures: string[] };
+    };
+    assert.equal(value.schemaVersion, 2);
+    assert.equal(value.policy.checked, true);
+    assert.equal(value.policy.passed, true);
+    assert.deepEqual(value.policy.failures, []);
+  });
+
+  it("returns exit 1, reports every failed policy, and does not write output", () => {
+    const file = join(dir, "policy.log");
+    const out = join(dir, "policy-output.log");
+    writeFileSync(file, "plain input\n");
+    const r = runCli([
+      file, "--output", out, "--check", "--min-reduction", "90",
+      "--max-output-bytes", "1", "--require-detection", "test-output",
+      "--json-version", "2",
+    ]);
+    assert.equal(r.status, 1);
+    assert.equal(existsSync(out), false);
+    const value = JSON.parse(r.stdout) as { policy: { passed: boolean; failures: string[] } };
+    assert.equal(value.policy.passed, false);
+    assert.equal(value.policy.failures.length, 3);
+  });
+
+  it("does not hide a failed policy in quiet output mode", () => {
+    const out = join(dir, "quiet-policy-output.log");
+    const r = runCli([
+      "--output", out, "--quiet", "--check", "--min-reduction", "100",
+    ], "plain input\n");
+    assert.equal(r.status, 1);
+    assert.match(r.stdout, /Policy FAIL/);
+    assert.equal(existsSync(out), false);
+  });
+
   it("reports UTF-8 bytes separately from character counts", () => {
     const file = join(dir, "unicode.log");
     writeFileSync(file, "😀\n");
@@ -231,5 +277,10 @@ describe("parseArgs", () => {
 
   it("rejects an unknown preset", () => {
     assert.throws(() => parseArgs(["--preset", "oops"]));
+  });
+
+  it("requires --check for policy options", () => {
+    assert.throws(() => parseArgs(["--min-reduction", "10"]), /require --check/);
+    assert.throws(() => parseArgs(["--check"]), /requires at least one/);
   });
 });

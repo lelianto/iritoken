@@ -1,0 +1,7 @@
+[36mRun npm test[0m
+PASS test/security.test.ts
+PASS test/security.test.ts
+PASS test/security.test.ts
+FAIL test/release.test.ts
+Error: tag v0.4.0 does not match package version 0.3.0
+Process completed with exit code 1.

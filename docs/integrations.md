@@ -1,7 +1,9 @@
 # Integrating iritoken
 
-All integrations are local and deterministic. None calls a model, opens a
-network connection, or records source content.
+The message, command, tokenizer, and stream integrations are local and
+deterministic. Optional provider adapters are the exception: they open an
+outbound HTTP(S) connection only when `complete()` is explicitly invoked.
+Adapter base URLs and credentials must come from trusted configuration.
 
 ## Unix pipelines
 

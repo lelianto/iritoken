@@ -1,0 +1,6 @@
+[0m[1mPlan: 2 to add, 1 to change, 0 to destroy.[0m
+module.api.aws_ecs_service.main: Modifying... [id=prod/api]
+module.api.aws_ecs_service.main: Modifying... [id=prod/api]
+Error: updating ECS Service: InvalidParameterException: minimumHealthyPercent must be less than or equal to 100
+  with module.api.aws_ecs_service.main,
+  on modules/api/main.tf line 42, in resource "aws_ecs_service" "main":

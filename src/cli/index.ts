@@ -17,8 +17,9 @@ import { createRequire } from "node:module";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { optimize } from "../pipeline/optimize.js";
+import { optimizeSegments } from "../pipeline/segments.js";
 import { estimateTokens } from "../token/counter.js";
-import type { OptimizeResult } from "../types.js";
+import type { ContentType, OptimizeResult } from "../types.js";
 import {
   DEFAULT_MAX_INPUT_BYTES,
   InputLimitError,
@@ -41,7 +42,17 @@ interface CliOptions {
   stdout: boolean;
   json: boolean;
   quiet: boolean;
+  check: boolean;
+  minReduction?: number;
+  maxOutputBytes?: number;
+  requireDetection?: ContentType;
+  jsonVersion: 1 | 2;
+  segments: boolean;
 }
+
+const CONTENT_TYPES: readonly ContentType[] = [
+  "generic-terminal-output", "source-code", "stack-trace", "test-output", "unknown",
+];
 
 const DISPLAY_OPERATIONS: Array<[string, string]> = [
   ["ansi", "ANSI"],
@@ -72,6 +83,9 @@ export function parseArgs(argv: string[]): CliOptions {
     stdout: false,
     json: false,
     quiet: false,
+    check: false,
+    jsonVersion: 1,
+    segments: false,
   };
 
   const positional: string[] = [];
@@ -97,6 +111,12 @@ export function parseArgs(argv: string[]): CliOptions {
         break;
       case "--json":
         options.json = true;
+        break;
+      case "--check":
+        options.check = true;
+        break;
+      case "--segments":
+        options.segments = true;
         break;
       case "-q":
       case "--quiet":
@@ -130,6 +150,37 @@ export function parseArgs(argv: string[]): CliOptions {
         options.maxInputBytes = Math.floor(mib * 1024 * 1024);
         break;
       }
+      case "--min-reduction": {
+        const value = Number(argv[++i]);
+        if (!Number.isFinite(value) || value < 0 || value > 100) {
+          throw new Error("--min-reduction must be a number between 0 and 100");
+        }
+        options.minReduction = value;
+        break;
+      }
+      case "--max-output-bytes": {
+        const value = Number(argv[++i]);
+        if (!Number.isSafeInteger(value) || value < 0) {
+          throw new Error("--max-output-bytes must be a non-negative integer");
+        }
+        options.maxOutputBytes = value;
+        break;
+      }
+      case "--require-detection": {
+        const value = argv[++i] as ContentType | undefined;
+        if (!value || !CONTENT_TYPES.includes(value)) {
+          throw new Error(`--require-detection must be one of: ${CONTENT_TYPES.join(", ")}`);
+        }
+        options.requireDetection = value;
+        break;
+      }
+      case "--json-version": {
+        const value = Number(argv[++i]);
+        if (value !== 1 && value !== 2) throw new Error("--json-version must be 1 or 2");
+        options.jsonVersion = value;
+        options.json = true;
+        break;
+      }
       default:
         if (arg.startsWith("-")) {
           throw new Error(`Unknown option: ${arg}`);
@@ -151,6 +202,18 @@ export function parseArgs(argv: string[]): CliOptions {
   if (options.dryRun && options.stdout) {
     throw new Error("--dry-run cannot be combined with --stdout");
   }
+  const hasPolicy = options.minReduction !== undefined
+    || options.maxOutputBytes !== undefined
+    || options.requireDetection !== undefined;
+  if (hasPolicy && !options.check) {
+    throw new Error("policy options require --check");
+  }
+  if (options.check && !hasPolicy) {
+    throw new Error("--check requires at least one policy option");
+  }
+  if (options.check && options.stdout) {
+    throw new Error("--check cannot be combined with --stdout");
+  }
   return options;
 }
 
@@ -168,6 +231,12 @@ Options:
   --dry-run             Report statistics without writing output
   --stdout              Write only optimized text to stdout (Unix filter mode)
   --json                Write a stable machine-readable result as JSON
+  --json-version <1|2>  Select JSON schema (default: 1 for compatibility)
+  --check               Enforce one or more CI policies (exit 1 on failure)
+  --segments            Optimize only labelled terminal-output Markdown fences
+  --min-reduction <pct> Require a minimum character reduction percentage
+  --max-output-bytes <n> Require optimized output at or below n UTF-8 bytes
+  --require-detection <type> Require the detected content type
   -q, --quiet           Suppress the human report when using --output
   --max-input-mb <n>    Reject larger input (default: 16 MiB, max: 1024)
   --explain             Explain what would change
@@ -179,6 +248,7 @@ Examples:
   npm test 2>&1 | iritoken
   npm test 2>&1 | iritoken --stdout > optimized.log
   iritoken build.log --json
+  iritoken build.log --check --min-reduction 10 --json-version 2
   iritoken build.log --output optimized.log
   iritoken build.log --preset balanced --explain
 `;
@@ -376,6 +446,47 @@ function renderExplain(original: string, result: OptimizeResult): string {
   return rows.join("\n");
 }
 
+interface PolicyResult {
+  checked: true;
+  passed: boolean;
+  failures: string[];
+  requirements: {
+    minimumReductionPercentage?: number;
+    maximumOutputBytes?: number;
+    detectionType?: ContentType;
+  };
+}
+
+function evaluatePolicy(options: CliOptions, result: OptimizeResult): PolicyResult | undefined {
+  if (!options.check) return undefined;
+  const failures: string[] = [];
+  const optimizedBytes = Buffer.byteLength(result.text);
+  if (options.minReduction !== undefined && result.stats.reductionPercentage < options.minReduction) {
+    failures.push(
+      `reduction ${result.stats.reductionPercentage.toFixed(2)}% is below ${options.minReduction}%`,
+    );
+  }
+  if (options.maxOutputBytes !== undefined && optimizedBytes > options.maxOutputBytes) {
+    failures.push(`output ${optimizedBytes} bytes exceeds ${options.maxOutputBytes} bytes`);
+  }
+  if (options.requireDetection !== undefined
+    && result.stats.detection.type !== options.requireDetection) {
+    failures.push(
+      `detection ${result.stats.detection.type} does not match ${options.requireDetection}`,
+    );
+  }
+  return {
+    checked: true,
+    passed: failures.length === 0,
+    failures,
+    requirements: {
+      minimumReductionPercentage: options.minReduction,
+      maximumOutputBytes: options.maxOutputBytes,
+      detectionType: options.requireDetection,
+    },
+  };
+}
+
 export async function mainImpl(argv: string[]): Promise<number> {
   let options: CliOptions;
   try {
@@ -390,7 +501,7 @@ export async function mainImpl(argv: string[]): Promise<number> {
     return 0;
   }
   if (options.version) {
-    let version = "0.2.1";
+    let version = "0.4.0";
     try {
       const pkg = require("../../package.json") as { version: string };
       version = pkg.version;
@@ -415,9 +526,12 @@ export async function mainImpl(argv: string[]): Promise<number> {
   }
 
   const input = inputResult.text;
-  const result = optimize(input, { preset: options.preset });
+  const result = options.segments
+    ? optimizeSegments(input, { preset: options.preset })
+    : optimize(input, { preset: options.preset });
+  const policy = evaluatePolicy(options, result);
 
-  if (options.output && !options.dryRun) {
+  if (options.output && !options.dryRun && policy?.passed !== false) {
     try {
       writeOutputSecurely(options.file, inputResult.fileStats, options.output, result.text);
     } catch (error) {
@@ -431,24 +545,42 @@ export async function mainImpl(argv: string[]): Promise<number> {
   } else if (options.json) {
     const originalBytes = Buffer.byteLength(input);
     const optimizedBytes = Buffer.byteLength(result.text);
-    process.stdout.write(JSON.stringify({
-      schemaVersion: 1,
-      preset: options.preset,
-      text: options.dryRun || options.output ? undefined : result.text,
-      bytes: {
-        original: originalBytes,
-        optimized: optimizedBytes,
-        removed: originalBytes - optimizedBytes,
-        reductionPercentage: originalBytes === 0
-          ? 0
-          : Math.round(((originalBytes - optimizedBytes) / originalBytes) * 10_000) / 100,
-      },
-      stats: result.stats,
-    }) + "\n");
-  } else if (!(options.quiet && options.output)) {
-    process.stdout.write((options.explain ? renderExplain(input, result) : renderReport(input, result)) + "\n");
+    const bytes = {
+      original: originalBytes,
+      optimized: optimizedBytes,
+      removed: originalBytes - optimizedBytes,
+      reductionPercentage: originalBytes === 0
+        ? 0
+        : Math.round(((originalBytes - optimizedBytes) / originalBytes) * 10_000) / 100,
+    };
+    const value = options.jsonVersion === 1
+      ? {
+          schemaVersion: 1,
+          preset: options.preset,
+          text: options.dryRun || options.output ? undefined : result.text,
+          bytes,
+          stats: result.stats,
+        }
+      : {
+          schemaVersion: 2,
+          preset: options.preset,
+          output: {
+            included: !(options.dryRun || options.output),
+            text: options.dryRun || options.output ? undefined : result.text,
+          },
+          bytes,
+          stats: result.stats,
+          policy: policy ?? { checked: false, passed: true, failures: [], requirements: {} },
+        };
+    process.stdout.write(JSON.stringify(value) + "\n");
+  } else if (!(options.quiet && options.output && policy?.passed !== false)) {
+    const report = options.explain ? renderExplain(input, result) : renderReport(input, result);
+    const policyReport = policy
+      ? `\n\nPolicy ${policy.passed ? "PASS" : "FAIL"}${policy.failures.length ? `\n${policy.failures.join("\n")}` : ""}`
+      : "";
+    process.stdout.write(report + policyReport + "\n");
   }
-  return 0;
+  return policy?.passed === false ? 1 : 0;
 }
 
 const ENTRY_FILE = process.argv[1];

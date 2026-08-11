@@ -12,6 +12,9 @@ Generated automatically by `npm run benchmark`. Do not edit by hand.
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | cargo-test-passing | 214 | 114 | 46.7% | 43 | 25 | 41.9% |
 | docker-build | 652 | 581 | 10.9% | 133 | 119 | 10.5% |
+| docker-compose-output | 245 | 187 | 23.7% | 50 | 38 | 24.0% |
+| eslint-output | 258 | 244 | 5.4% | 46 | 45 | 2.2% |
+| github-actions-log | 220 | 211 | 4.1% | 41 | 39 | 4.9% |
 | go-test-passing | 269 | 63 | 76.6% | 50 | 12 | 76.0% |
 | jest-output | 1,166 | 1,166 | 0.0% | 232 | 232 | 0.0% |
 | kubernetes-events | 985 | 985 | 0.0% | 166 | 166 | 0.0% |
@@ -30,10 +33,11 @@ Generated automatically by `npm run benchmark`. Do not edit by hand.
 | repetitive-logs | 2,105 | 1,554 | 26.2% | 387 | 287 | 25.8% |
 | semantic-whitespace | 134 | 134 | 0.0% | 26 | 26 | 0.0% |
 | stack-trace | 2,616 | 1,660 | 36.5% | 410 | 259 | 36.8% |
+| terraform-output | 399 | 346 | 13.3% | 70 | 63 | 10.0% |
 | tsc-errors | 1,982 | 1,982 | 0.0% | 355 | 355 | 0.0% |
 | vitest-output | 1,685 | 1,685 | 0.0% | 298 | 298 | 0.0% |
 
-**Total for preset: balanced — 15.9% characters**
+**Total for preset: balanced — 15.7% characters**
 
 ## preset: safe
 
@@ -41,6 +45,9 @@ Generated automatically by `npm run benchmark`. Do not edit by hand.
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | cargo-test-passing | 214 | 214 | 0.0% | 43 | 43 | 0.0% |
 | docker-build | 652 | 581 | 10.9% | 133 | 119 | 10.5% |
+| docker-compose-output | 245 | 187 | 23.7% | 50 | 38 | 24.0% |
+| eslint-output | 258 | 244 | 5.4% | 46 | 45 | 2.2% |
+| github-actions-log | 220 | 211 | 4.1% | 41 | 39 | 4.9% |
 | go-test-passing | 269 | 269 | 0.0% | 50 | 50 | 0.0% |
 | jest-output | 1,166 | 1,166 | 0.0% | 232 | 232 | 0.0% |
 | kubernetes-events | 985 | 985 | 0.0% | 166 | 166 | 0.0% |
@@ -59,16 +66,17 @@ Generated automatically by `npm run benchmark`. Do not edit by hand.
 | repetitive-logs | 2,105 | 1,554 | 26.2% | 387 | 287 | 25.8% |
 | semantic-whitespace | 134 | 134 | 0.0% | 26 | 26 | 0.0% |
 | stack-trace | 2,616 | 2,616 | 0.0% | 410 | 410 | 0.0% |
+| terraform-output | 399 | 346 | 13.3% | 70 | 63 | 10.0% |
 | tsc-errors | 1,982 | 1,982 | 0.0% | 355 | 355 | 0.0% |
 | vitest-output | 1,685 | 1,685 | 0.0% | 298 | 298 | 0.0% |
 
-**Total for preset: safe — 6.6% characters**
+**Total for preset: safe — 6.9% characters**
 
 
 ## Combined
 
-Total input characters: 37,954
-Total optimized characters: 33,676
+Total input characters: 40,198
+Total optimized characters: 35,652
 Overall reduction: 11.3%
 
 
@@ -80,10 +88,18 @@ Overall reduction: 11.3%
 | application-log | safe | 2,105 | 1,554 | 26.2% |
 | build-output | balanced | 652 | 581 | 10.9% |
 | build-output | safe | 652 | 581 | 10.9% |
+| ci-output | balanced | 220 | 211 | 4.1% |
+| ci-output | safe | 220 | 211 | 4.1% |
 | compiler-output | balanced | 1,982 | 1,982 | 0.0% |
 | compiler-output | safe | 1,982 | 1,982 | 0.0% |
+| container-output | balanced | 245 | 187 | 23.7% |
+| container-output | safe | 245 | 187 | 23.7% |
+| infrastructure-output | balanced | 399 | 346 | 13.3% |
+| infrastructure-output | safe | 399 | 346 | 13.3% |
 | instructions | balanced | 96 | 96 | 0.0% |
 | instructions | safe | 96 | 96 | 0.0% |
+| linter-output | balanced | 258 | 244 | 5.4% |
+| linter-output | safe | 258 | 244 | 5.4% |
 | mixed-context | balanced | 1,156 | 1,156 | 0.0% |
 | mixed-context | safe | 1,156 | 1,156 | 0.0% |
 | package-manager | balanced | 1,990 | 1,787 | 10.2% |

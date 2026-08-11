@@ -1,0 +1,63 @@
+name: iritoken context policy
+description: Optimize coding context and enforce deterministic size and detection policies
+inputs:
+  input:
+    description: Input log or Markdown file
+    required: true
+  output:
+    description: Optimized output path
+    required: false
+    default: iritoken-output.txt
+  preset:
+    description: safe, balanced, or aggressive
+    required: false
+    default: balanced
+  min-reduction:
+    description: Minimum character reduction percentage
+    required: false
+    default: "0"
+  max-output-bytes:
+    description: Maximum optimized UTF-8 byte size (empty disables the policy)
+    required: false
+    default: ""
+  require-detection:
+    description: Required detected content type (empty disables the policy)
+    required: false
+    default: ""
+  segments:
+    description: Optimize only labelled terminal-output Markdown fences
+    required: false
+    default: "false"
+  upload-artifact:
+    description: Upload the optimized output as a workflow artifact
+    required: false
+    default: "true"
+outputs:
+  passed:
+    description: Whether every policy passed
+    value: ${{ steps.run.outputs.passed }}
+  reduction-percentage:
+    description: Character reduction percentage
+    value: ${{ steps.run.outputs.reduction-percentage }}
+  optimized-bytes:
+    description: Optimized UTF-8 byte size
+    value: ${{ steps.run.outputs.optimized-bytes }}
+runs:
+  using: composite
+  steps:
+    - id: run
+      shell: bash
+      env:
+        IRITOKEN_INPUT: ${{ inputs.input }}
+        IRITOKEN_OUTPUT: ${{ inputs.output }}
+        IRITOKEN_PRESET: ${{ inputs.preset }}
+        IRITOKEN_MIN_REDUCTION: ${{ inputs.min-reduction }}
+        IRITOKEN_MAX_OUTPUT_BYTES: ${{ inputs.max-output-bytes }}
+        IRITOKEN_REQUIRE_DETECTION: ${{ inputs.require-detection }}
+        IRITOKEN_SEGMENTS: ${{ inputs.segments }}
+      run: node "${{ github.action_path }}/.github/actions/run.mjs"
+    - if: ${{ inputs.upload-artifact == 'true' }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: iritoken-optimized-context
+        path: ${{ inputs.output }}

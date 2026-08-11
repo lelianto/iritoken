@@ -12,7 +12,15 @@ You should receive an acknowledgement within 7 days and an initial assessment wi
 
 ## Scope and security boundary
 
-iritoken processes local strings and files. It does not provide an HTTP server, authentication, database access, or outbound networking. Resource exhaustion, unsafe filesystem behavior, terminal injection, package integrity, and unexpectedly executed input are in scope. CSRF, SSRF, SQL injection prevention, and volumetric DDoS mitigation belong to the application or gateway exposing iritoken over a network.
+iritoken's core optimizer processes local strings and files. It does not provide
+an HTTP server, authentication, or database access. Optional provider adapters
+perform outbound HTTP(S) requests only when explicitly invoked. Adapter base
+URLs and API keys are trusted configuration; allowing an untrusted party to
+choose a base URL can create SSRF in the host application. Resource exhaustion,
+unsafe filesystem behavior, terminal injection, provider-boundary handling,
+package integrity, and unexpectedly executed input are in scope. CSRF, SQL
+injection prevention, and volumetric DDoS mitigation belong to the application
+or gateway exposing iritoken over a network.
 
 ## Local security controls
 
@@ -26,6 +34,14 @@ Terminal cleanup strips ANSI/ECMA-48 styling and control-string families,
 including OSC clipboard payloads and C1 forms, without executing input. Stream
 APIs enforce total-input or maximum-line limits according to their buffering
 model.
+
+Context-engine APIs bound candidate/item/message cardinality and total text,
+semantic index entries and vector dimensions, semantic-cache entries and vector
+dimensions, route catalogs, and in-memory metric observations. Duplicate IDs
+that could make budget or routing decisions ambiguous are rejected. Provider
+adapters validate HTTP(S) destinations, credentials, message/request size,
+enforce a 30-second default timeout with abort propagation, cap error bodies,
+and prevent custom headers from replacing the configured authorization value.
 
 These controls reduce local-file and terminal-injection risk; callers remain
 responsible for choosing trusted paths and applying stricter sandboxing where
@@ -43,6 +59,9 @@ npm run test:real-cases
 `test:security` exercises library and stream resource limits, terminal-control
 and clipboard-sequence removal, CLI input boundaries, symlink and non-regular
 path rejection, hard-link alias protection, and atomic output behavior.
+It also covers context cardinality/character limits, semantic vector/index
+bounds, telemetry bounds, duplicate identifiers, provider request ceilings,
+timeouts, destination validation, and authorization-header integrity.
 
 `test:real-cases` runs the committed corpus across all presets, the labelled
 detection set, and executable semantic invariants. It fails on missing required

@@ -32,6 +32,10 @@
 
 ---
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lelianto/iritoken/main/assets/package-architecture.png" width="1100" alt="iritoken modular optimization toolkit: deterministic local core with optional context budgeting, retrieval, cache, routing, provider, observability, and evaluation modules" />
+</p>
+
 AI coding workflows repeatedly send ANSI codes, duplicate logs, redundant stack
 frames, test-runner noise, and excessive whitespace to language models.
 `iritoken` removes that deterministic noise before it consumes context-window
@@ -41,14 +45,15 @@ space or API budget.
 same input + same configuration = same output
 ```
 
-It makes no network requests, uses no model, needs no API key, and never
-summarizes content. When a transformation is uncertain, the original
+The core optimization APIs make no network requests, use no model, need no API
+key, and never summarize content. When a transformation is uncertain, the original
 information is preserved.
 
 ## Table of contents
 
 - [Why iritoken?](#why-iritoken)
 - [Features](#features)
+- [Package architecture](#package-architecture)
 - [Quick start](#quick-start)
 - [CLI](#cli)
 - [Library API](#library-api)
@@ -59,7 +64,8 @@ information is preserved.
 - [Integrations](#integrations)
   - [Chat messages](#chat-messages)
   - [Node streams](#node-streams)
-- [How it works](#how-it-works)
+- [Production context controls](#production-context-controls)
+- [How core optimization works](#how-core-optimization-works)
 - [Safety guarantees](#safety-guarantees)
 - [Benchmarks](#benchmarks)
 - [Security](#security)
@@ -84,7 +90,8 @@ can verify mechanically and leaves unique content alone.
 ## Features
 
 - **Deterministic:** reproducible output with no probabilistic model behavior.
-- **Local and private:** no telemetry, network requests, storage, or API keys.
+- **Local core:** optimization has no telemetry, network requests, storage, or
+  API keys. Optional provider adapters perform outbound calls only when invoked.
 - **Zero runtime dependencies:** small supply-chain and installation footprint.
 - **Conservative by default:** `safe` is the default preset.
 - **Idempotent:** optimizing an optimized result produces the same text.
@@ -93,6 +100,36 @@ can verify mechanically and leaves unique content alone.
 - **Composable:** library API, Unix filter, JSON output, chat helpers, and streams.
 - **Measured:** deterministic regression corpus plus live-model quality results.
 - **Typed:** ESM TypeScript package with bundled declaration files.
+
+## Package architecture
+
+`iritoken` is one npm package with modular responsibilities. Its primary job is
+deterministic context optimization; optional modules add context selection,
+retrieval, caching, routing, provider integration, observability, and quality
+evaluation.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lelianto/iritoken/main/assets/adoption-paths.png" width="1000" alt="Separate progressive adoption paths for solo developers and enterprises using the same modular iritoken package" />
+</p>
+
+| Module | Primary responsibility | Does it directly remove tokens? |
+| --- | --- | --- |
+| Core | Clean and compact supported input deterministically | Yes |
+| Context | Rank, select, and fit information to a hard budget | Sometimes |
+| Retrieval | Fetch only relevant source material | Indirectly |
+| Cache | Avoid repeated requests or prepare stable prefixes | No compression |
+| Routing | Select an eligible model by policy | No |
+| Providers | Send explicit requests and normalize actual usage | No |
+| Observability | Explain and measure decisions | No |
+| Evaluation | Verify savings and quality retention together | No |
+
+The modules can be adopted independently by a solo developer or combined behind
+an enterprise AI gateway. Metrics remain separate: tokens removed, context
+selected out, requests avoided, provider usage, cost reduction, latency impact,
+and quality retention are not interchangeable.
+
+See [package architecture and use cases](docs/package-architecture.md) for each
+module's APIs, boundaries, and solo-developer and enterprise adoption examples.
 
 ## Quick start
 
@@ -136,6 +173,12 @@ Options:
   --preset <name>       safe (default) | balanced | aggressive
   --stdout              Emit optimized text only
   --json                Emit a versioned machine-readable result
+  --json-version <1|2>  Select JSON schema (v1 remains the default)
+  --check               Enforce CI policies and fail with exit code 1
+  --min-reduction <pct> Require minimum character reduction
+  --max-output-bytes <n> Require a maximum UTF-8 output size
+  --require-detection <type> Require a detected content type
+  --segments            Optimize labelled terminal-output Markdown fences only
   --dry-run             Report statistics without writing output
   --explain             Explain the transformations
   --max-input-mb <n>    Override the 16 MiB input limit
@@ -159,6 +202,9 @@ npm test 2>&1 | iritoken --stdout | pbcopy
 # Inspect machine-readable statistics
 iritoken build.log --json | jq '.stats'
 
+# Enforce a context budget in CI and receive the complete policy result
+iritoken build.log --check --min-reduction 10 --max-output-bytes 100000 --json-version 2
+
 # Understand why cleaners changed or skipped the input
 iritoken build.log --preset balanced --explain
 ```
@@ -168,7 +214,29 @@ pipeline. `--json` uses a top-level `schemaVersion` so automation can validate
 the response format, and reports UTF-8 byte counts independently from character
 and optional exact-token counts.
 
+JSON v1 remains the compatibility default. Schema v2 is opt-in and adds a
+stable policy result. A failed policy prevents `--output` from being written.
+
+### GitHub Action
+
+```yaml
+- uses: lelianto/iritoken@v0.4.0
+  with:
+    input: test-output.log
+    output: test-output.optimized.log
+    preset: balanced
+    min-reduction: "10"
+    max-output-bytes: "100000"
+```
+
+The action writes a job summary, exposes `passed`, `reduction-percentage`, and
+`optimized-bytes` outputs, and uploads the optimized file by default.
+
 ## Library API
+
+For mixed Markdown, `optimizeSegments(markdown, options)` is an opt-in API that
+only changes explicitly labelled terminal-output fences. Prose, source-code
+fences, and fence markers are preserved exactly.
 
 ### `optimize(input, options?)`
 
@@ -334,7 +402,25 @@ and the balanced/aggressive cleaners.
 
 See [the integration guide](docs/integrations.md) for additional examples.
 
-## How it works
+## Production context controls
+
+The unified router uses lexical-lossless JSON/JSONL compaction, command
+provenance, or the conservative generic pipeline as appropriate:
+
+```ts
+import { optimizeContext } from "iritoken";
+
+const result = optimizeContext(toolOutput, { command: "npm test" });
+console.log(result.strategy, result.stats.reductionPercentage);
+```
+
+Additional opt-in APIs support shadow-mode measurement with SHA-256 evidence,
+bounded content-addressed original retrieval, and paired quality gates that fail
+when saving or quality thresholds are missed. See the
+[production context optimization guide](docs/production-context-optimization.md)
+for examples, security boundaries, and validation requirements.
+
+## How core optimization works
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/lelianto/iritoken/main/assets/cleaning-pipeline.png" width="720" alt="iritoken cleaning pipeline from input through content detection and cleaners to optimized text, statistics, and decisions" />
@@ -373,23 +459,28 @@ automated workflow.
 Benchmarks are generated by running the real implementation against committed
 fixtures. Compression is useful only when task quality survives.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/lelianto/iritoken/main/assets/benchmark-evidence.png" width="1100" alt="Dated iritoken benchmark evidence separating deterministic local estimates from the 2026-08-11 DeepSeek V4 Flash live context campaign" />
+</p>
+
 ### Current deterministic results
 
 | Metric | Result |
 | --- | ---: |
-| Quality tasks | **16/16 → 16/16** |
+| Quality tasks | **20/20 → 20/20** |
 | Success regression | **0 percentage points** |
-| Estimated input tokens | **2,910 → 2,484** |
-| Estimated token reduction | **14.6%** |
-| Balanced corpus character reduction | **15.9%** |
-| Corpus regression matrix | **16 tasks × 3 presets passed** |
+| Estimated input tokens | **3,117 → 2,669** |
+| Estimated token reduction | **14.4%** |
+| Balanced corpus character reduction | **15.7%** |
+| Corpus regression matrix | **20 tasks × 3 presets passed** |
 | Semantic invariants | **33/33 passed** |
 | Terminal eligibility | **100% recall, 100% specificity** |
-| Unit and integration tests | **139/139 passed** |
+| Unit and integration tests | **188/188 passed** |
 
 The deterministic corpus includes npm, TypeScript, Vitest, Jest, pytest, Go,
 Cargo, JavaScript and Python stack traces, repetitive logs, mixed agent
-context, Docker, Kubernetes, and Python failures.
+context, Docker, Docker Compose, Kubernetes, Terraform, ESLint, GitHub Actions,
+and Python failures.
 
 The fixture percentages describe character reduction, not information loss.
 For example, Python decreases from 544 to 401 characters by replacing three
@@ -405,13 +496,13 @@ is present, the complete test report is preserved.
 | Go passing report | 269 | 63 | **76.6%** |
 | Cargo passing report | 214 | 114 | **46.7%** |
 
-The 15.9% corpus figure is calculated from total characters across every
-fixture, including sensitive inputs deliberately left unchanged. The 14.6%
+The 15.7% corpus figure is calculated from total characters across every
+fixture, including sensitive inputs deliberately left unchanged. The 14.4%
 token figure is a heuristic estimate—an average of `characters / 4` and a
 word-like count—not an exact model tokenizer result. See the
 [0.3.0 coverage methodology](docs/enhancements/005-python-and-test-runner-coverage.md)
-for before/after examples, formulas, safeguards, validation evidence, and
-limitations.
+and [0.4.0 CI/release methodology](docs/enhancements/006-ci-adoption-and-release-integrity.md)
+for examples, formulas, safeguards, validation evidence, and limitations.
 
 ### Live-model quality result
 
@@ -420,19 +511,41 @@ trials, and 60 requests on a newly authored six-task suite:
 
 | Metric | Original | Optimized |
 | --- | ---: | ---: |
-| API-reported input tokens | 7,170 | 6,185 |
-| Fact recall | 88.0% | 88.0% |
-| Complete tasks | 15/30 | 15/30 |
+| API-reported input tokens | 8,635 | 8,170 |
+| Fact recall | 92.5% | 95.8% |
+| Complete tasks | 21/30 | 25/30 |
 
-- Actual API token reduction: **13.74%**
-- Paired mean quality change: **0.00 percentage points**
-- Task-cluster bootstrap 95% CI: **0.00 to 0.00 percentage points**
+- Actual API token reduction: **5.39%**
+- Paired mean quality change: **+3.33 percentage points**
+- Task-cluster bootstrap 95% CI: **0.00 to +10.00 percentage points**
 - Pre-registered −5pp non-inferiority margin: **passed**
-- Recorded cost: approximately **$0.002690**
+- Recorded cost: approximately **$0.003239**
 
 This result supports non-inferiority for that model, configuration, and task
 suite—not every model or workload. The corpus ID and SHA-256 fingerprint are
 recorded with the report so the result can be traced to exact fresh inputs.
+The apparent quality improvement is specific to this sample and is not claimed
+as proof that optimization generally improves model quality.
+
+The full context-engine campaign separately tested retrieval, ranking, hard
+budgets, conversation compaction, model routing, prompt-prefix preparation,
+semantic-cache probes, provider usage normalization, and scoring. It used nine
+new synthetic tasks from easy to hard, three randomized trials per variant, and
+54 DeepSeek V4 Flash requests:
+
+| Context-engine metric | Original | Optimized |
+| --- | ---: | ---: |
+| Complete runs | 27/27 | 27/27 |
+| Fact recall | 100.0% | 100.0% |
+| API-reported prompt tokens | 4,425 | 3,894 |
+| Prompt-token reduction | — | **12.0%** |
+
+Every prompt records eleven checkpoints from raw context through provider
+response and fact scoring. The initial campaign exposed an ambiguous
+prompt/rubric mismatch; that result was preserved, diagnosed, corrected under a
+new corpus fingerprint, and the complete campaign was rerun. See the
+[full analysis](docs/deepseek-v4-context-campaign-analysis.md) and
+[final report](benchmark/results/DEEPSEEK-CONTEXT-V4-1.md).
 
 ### Performance
 
@@ -440,18 +553,29 @@ Latest isolated balanced-preset run (median of three processes):
 
 | Input | Time | Peak RSS | Throughput cost |
 | --- | ---: | ---: | ---: |
-| 10 KiB | ~3.3 ms | ~75.6 MiB | ~337 ms/MiB |
-| 100 KiB | ~7.6 ms | ~76.1 MiB | ~78 ms/MiB |
-| 1 MiB | ~39.0 ms | ~91.1 MiB | ~39 ms/MiB |
-| 10 MiB | ~277.1 ms | ~233.8 MiB | ~28 ms/MiB |
+| 10 KiB | ~3.0 ms | ~75.0 MiB | ~308 ms/MiB |
+| 100 KiB | ~6.9 ms | ~76.3 MiB | ~71 ms/MiB |
+| 1 MiB | ~31.2 ms | ~90.9 MiB | ~31 ms/MiB |
+| 10 MiB | ~265.3 ms | ~233.5 MiB | ~27 ms/MiB |
 
-For a 12 MiB terminal workload, the incremental transform used ~89.4 MiB peak
-RSS versus ~275.9 MiB for the generic buffered transform while producing the
+For a 12 MiB terminal workload, the incremental transform used ~89.5 MiB peak
+RSS versus ~276.3 MiB for the generic buffered transform while producing the
 same output size.
+
+The context-engine benchmark covers ranking, hard-budget selection, 64-dimension
+semantic indexing, and top-k retrieval in isolated processes:
+
+| Context entries | Median time | Peak RSS |
+| ---: | ---: | ---: |
+| 100 | 2.5 ms | 79.2 MiB |
+| 1,000 | 9.9 ms | 83.5 MiB |
+| 10,000 | 81.4 ms | 128.5 MiB |
 
 See the [generated compression report](benchmark/results/REPORT.md) and
 [quality methodology](docs/quality-benchmark.md) for fixtures, limitations,
-historical results, and reproduction instructions.
+historical results, and reproduction instructions. Security controls,
+complexity, performance gates, and current measurements are recorded in the
+[security/performance report](docs/security-performance.md).
 
 ### Reproduce locally
 
@@ -460,6 +584,7 @@ npm run benchmark -- balanced
 npm run benchmark:quality
 npm run benchmark:corpus
 npm run benchmark:perf
+npm run benchmark:context-perf
 npm run report
 ```
 
@@ -468,14 +593,17 @@ Live-provider benchmarks are intentionally separate and cost-capped:
 ```bash
 npm run benchmark:groq -- --trials 1
 npm run benchmark:deepseek -- --trials 1 --max-cost-usd 0.01
+npm run benchmark:deepseek:campaign -- --trials 3 --max-cost-usd 0.03
 ```
 
 ## Security
 
-`iritoken` is a local text processor. It does not execute input, open sockets,
-query databases, fetch URLs, parse sessions, or expose an HTTP server. SQL
-injection, CSRF, and SSRF therefore have no direct attack surface in this
-package.
+Core optimization is local: it does not execute input, open sockets, query
+databases, fetch URLs, parse sessions, or expose an HTTP server. Optional
+provider adapters do perform an outbound request when `complete()` is invoked.
+Their `baseUrl` is trusted configuration and must never be accepted directly
+from an untrusted user; doing so would create an SSRF boundary in the host
+application. The package itself does not provide an inbound server.
 
 Resource-exhaustion and filesystem protections include:
 
@@ -487,6 +615,12 @@ Resource-exhaustion and filesystem protections include:
 - exclusive owner-only temporary output followed by atomic rename
 - removal of OSC clipboard, C1, DCS, SOS, PM, APC, and partial escape sequences
 - sanitized diagnostic messages
+- bounded context candidates, conversation messages, total characters, semantic
+  index entries, embedding dimensions, cache entries, and metric observations
+- rejection of duplicate budget-item and model-route identifiers
+- provider request character/message ceilings, abort propagation, and a 30-second
+  default timeout
+- provider authorization headers cannot be overridden by custom headers
 
 Applications exposing `iritoken` over HTTP must still implement authentication,
 authorization, body/time limits, rate limiting, CSRF controls, SSRF protection,
@@ -533,10 +667,18 @@ release workflow defaults to dry-run and supports npm provenance.
 ```text
 iritoken/
 ├── src/
+│   ├── cache/             bounded semantic response cache
 │   ├── cleaners/          deterministic transformation stages
+│   ├── context/           ranking, budgets, and conversation compaction
 │   ├── detectors/         content-type detection
+│   ├── evaluation/        paired saving and quality gates
 │   ├── integrations/      provider-neutral message helpers
+│   ├── observability/     bounded metrics collection
 │   ├── pipeline/          optimize() and presets
+│   ├── prompt/            cache-aware prompt preparation
+│   ├── providers/         optional outbound provider adapters
+│   ├── retrieval/         semantic and content-addressed retrieval
+│   ├── routing/           capability and cost-aware model selection
 │   ├── stats/             character and token statistics
 │   ├── token/             counters and tokenizer adapters
 │   ├── cli/               command-line interface

@@ -1,0 +1,15 @@
+ RUN  v3.8.1 /workspace/marigold
+
+ ✓ src/marigold/codec.test.ts > encodes checkpoint envelope
+ ✓ src/marigold/codec.test.ts > decodes checkpoint envelope
+ ✓ src/marigold/store.test.ts > persists checkpoint atomically
+ ✓ src/marigold/store.test.ts > restores latest checkpoint
+ × src/marigold/checkpoint.test.ts > rejects stale marigold checkpoint
+   → expected revision rev_MG_440 but received rev_MG_438
+
+AssertionError: expected 'rev_MG_438' to be 'rev_MG_440'
+ ❯ src/marigold/checkpoint.test.ts:119:26
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  1 failed | 4 passed (5)
+

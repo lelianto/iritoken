@@ -4,7 +4,7 @@ This document records the live quality validation for iritoken's
 quality-first `balanced` preset. The objective is not maximum compression; it
 is measurable token reduction without a material loss in useful facts.
 
-## Final result
+## Latest result: live v3 context router
 
 Measured on 2026-08-11 with the official DeepSeek API:
 
@@ -14,29 +14,72 @@ Measured on 2026-08-11 with the official DeepSeek API:
 | Thinking mode | Disabled |
 | Preset | `balanced` |
 | Trials | 5 per task and variant |
-| Corpus | `live-v2-2026-08-11-quartz` |
-| Corpus SHA-256 | `2e411b8032845ac7b3c3d618834a90686bb087de703c31591c839ad4502a49c5` |
+| Corpus | `live-v3-2026-08-11-aurora` |
+| Corpus SHA-256 | `d774fcfb09b49362c1feb4bd890ba80589bd92be8444f1fcd2f3b5eb6c30a743` |
 | Tasks | 6 (newly authored) |
 | Requests | 60 |
 | Maximum response | 256 tokens |
-| Original input tokens | 7,170 |
-| Optimized input tokens | 6,185 |
-| API-reported reduction | **13.74%** |
-| Original fact recall | 88.0% |
-| Optimized fact recall | 88.0% |
-| Paired mean difference | **0.00pp** |
-| Task-cluster bootstrap 95% CI | **0.00pp to 0.00pp** |
+| Original input tokens | 8,635 |
+| Optimized input tokens | 8,170 |
+| API-reported reduction | **5.39%** |
+| Original fact recall | 92.5% |
+| Optimized fact recall | 95.83% |
+| Paired mean difference | **+3.33pp** |
+| Task-cluster bootstrap 95% CI | **0.00pp to +10.00pp** |
 | Non-inferiority margin | -5pp |
 | Non-inferiority result | **PASS** |
-| Approximate API cost | $0.002690 |
+| Approximate API cost | $0.003239 |
 
 The result supports non-inferiority only for this model, fixture set, prompt,
-and rubric. It is not a universal guarantee for every model or workload.
+and rubric. The positive point estimate is not evidence that optimization
+generally improves quality; it may reflect task composition and model variance.
 
 All task prompts, fixture facts, identifiers, and contexts in this campaign
-were newly authored for this run. No previous live task or prompt text was sent
+were newly authored for this v3 run. No previous live task or prompt text was sent
 to the provider. The paired comparison is the relevant measure of iritoken's
-effect; complete-task success was 15/30 for both variants.
+effect; complete-task success was 21/30 for original and 25/30 for optimized.
+
+## Full context-engine campaign: v4.1
+
+The separate `context-v4.1-2026-08-11-prismatic` campaign validates the new
+context-engine components together rather than only the core optimizer. It uses
+9 entirely new synthetic tasks (3 easy, 3 medium, 3 hard), 3 trials, paired
+original/optimized variants, deterministic randomized request order, and 54
+DeepSeek V4 Flash calls.
+
+| Metric | Original | Optimized |
+| --- | ---: | ---: |
+| Complete runs | 27/27 | 27/27 |
+| Fact recall | 100.0% | 100.0% |
+| API prompt tokens | 4,425 | 3,894 |
+| Prompt-token reduction | — | **12.0%** |
+
+By difficulty, prompt-token reduction was 3.23% for easy tasks, 15.61% for
+medium tasks, and 14.45% for hard tasks, with 100% recall in both variants at
+every level. Provider-reported cache usage was 4,224 hit and 4,095 miss tokens.
+Approximate campaign cost was $0.000961.
+
+Each prompt is traced through raw input, deterministic routing/optimization,
+semantic retrieval, context ranking, budget/compaction, model routing,
+cache-aware prompt construction, semantic-cache probes, provider request,
+provider response, and quality scoring. The JSON result contains exact synthetic
+message arrays, stage hashes and counts, retrieval IDs, ranking details, omitted
+indices, budgets, request IDs, exact API usage, answer hashes, and missing facts.
+Answer text and API keys are not stored.
+
+The first v4 attempt is intentionally preserved. It revealed that “report the
+exception” was ambiguous while its rubric required the exception type. A
+targeted diagnostic confirmed that context was intact. Version 4.1 clarified
+“exception type and message,” received a new corpus ID/fingerprint, and reran
+all 54 calls. See `DEEPSEEK-CONTEXT-V4.md`,
+`DEEPSEEK-CONTEXT-V4-1.md`, and
+`docs/deepseek-v4-context-campaign-analysis.md`.
+
+The v3 campaign exercises `optimizeContext()` rather than only `optimize()`.
+It covers lexical JSONL routing plus command provenance for application logs,
+stack traces, failing tests, container builds, and rollout output. The complete
+machine-readable and concise reports are `deepseek-live-v3.json` (ignored from
+Git because it is environment-specific) and `DEEPSEEK-V3.md`.
 
 ## Methodology
 
@@ -80,6 +123,7 @@ then run:
 
 ```bash
 npm run benchmark:deepseek -- --trials 5 --max-cost-usd 0.02
+npm run benchmark:deepseek:campaign -- --trials 3 --max-cost-usd 0.03
 ```
 
 Raw secret-free measurements are written to

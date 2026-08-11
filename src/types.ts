@@ -114,3 +114,18 @@ export interface OptimizeResult {
   text: string;
   stats: OptimizeStats;
 }
+
+export interface OptimizedSegment {
+  index: number;
+  language: string;
+  changed: boolean;
+  originalCharacters: number;
+  optimizedCharacters: number;
+}
+
+/** Result of opt-in optimization limited to declared terminal-output fences. */
+export interface OptimizeSegmentsResult extends OptimizeResult {
+  segmentsFound: number;
+  segmentsOptimized: number;
+  segments: OptimizedSegment[];
+}

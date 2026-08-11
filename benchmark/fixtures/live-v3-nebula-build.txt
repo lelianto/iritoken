@@ -1,0 +1,18 @@
+#31 [resolver 8/14] loading graph metadata
+#31 [resolver 9/14] loading graph metadata
+#31 [resolver 10/14] validating graph edges
+#31 [resolver 11/14] compiling dependency graph
+#31 4.811 src/nebula/graph.ts(203,18): error NB311: EdgeSelector is missing property 'namespace'
+#31 4.812 src/nebula/graph.ts(203,18): error NB311: EdgeSelector is missing property 'namespace'
+#31 ERROR: process "/bin/sh -c pnpm build:resolver" did not complete successfully: exit status 29
+------
+ > [resolver 11/14] RUN pnpm build:resolver:
+4.811 src/nebula/graph.ts(203,18): error NB311
+------
+Buildfile:47
+--------------------
+  45 | COPY src ./src
+  46 | RUN pnpm generate
+  47 | >>> RUN pnpm build:resolver
+--------------------
+

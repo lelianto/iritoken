@@ -10,7 +10,7 @@ on:
         default: false
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -27,6 +27,8 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
       - run: npm ci
+      - name: Validate package, lockfile, changelog, and release tag
+        run: npm run release:integrity
       - name: Mandatory security gate
         run: npm run test:security
       - name: Mandatory real-case gate
@@ -34,11 +36,45 @@ jobs:
       - name: Package lifecycle verification
         run: npm run prepublishOnly
       - run: npm run benchmark:verify
-      - run: npm pack --dry-run
+      - name: Pack release artifact and checksum
+        id: package
+        shell: bash
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          TARBALL=$(npm pack --json | jq -r '.[0].filename')
+          sha256sum "$TARBALL" > "$TARBALL.sha256"
+          echo "version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
       - run: npm sbom --sbom-format cyclonedx > iritoken-sbom.cdx.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: iritoken-sbom
-          path: iritoken-sbom.cdx.json
+          name: iritoken-release-integrity
+          path: |
+            iritoken-sbom.cdx.json
+            ${{ steps.package.outputs.tarball }}
+            ${{ steps.package.outputs.tarball }}.sha256
       - if: ${{ inputs.publish }}
         run: npm publish --provenance --access public
+      - name: Create GitHub release after npm publish
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.package.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.package.outputs.version }}
+          TARBALL: ${{ steps.package.outputs.tarball }}
+        shell: bash
+        run: |
+          awk -v version="$RELEASE_VERSION" '
+            $0 ~ "^## " version " -" { printing=1 }
+            printing && $0 ~ "^## " && $0 !~ "^## " version " -" { exit }
+            printing { print }
+          ' CHANGELOG.md > release-notes.md
+          printf '\n### Integrity\n\n```text\n' >> release-notes.md
+          cat "$TARBALL.sha256" >> release-notes.md
+          printf '```\n' >> release-notes.md
+          gh release create "$RELEASE_TAG" \
+            --target "$GITHUB_SHA" \
+            --title "iritoken $RELEASE_VERSION" \
+            --notes-file release-notes.md \
+            "$TARBALL" "$TARBALL.sha256" iritoken-sbom.cdx.json

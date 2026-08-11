@@ -33,6 +33,34 @@ export interface BenchmarkTask {
 
 export const TASKS: BenchmarkTask[] = [
   {
+    name: "github-actions-release-failure",
+    fixture: "github-actions-log.txt",
+    workload: "ci-output",
+    description: "Preserve the failed release check, version mismatch, and process exit code.",
+    verification: { mustContain: ["test/release.test.ts", "v0.4.0", "package version 0.3.0", "exit code 1"] },
+  },
+  {
+    name: "terraform-apply-diagnosis",
+    fixture: "terraform-output.txt",
+    workload: "infrastructure-output",
+    description: "Preserve the Terraform resource, diagnostic, source file, and plan totals.",
+    verification: { mustContain: ["2 to add, 1 to change, 0 to destroy", "minimumHealthyPercent", "modules/api/main.tf line 42"] },
+  },
+  {
+    name: "docker-compose-service-failure",
+    fixture: "docker-compose-output.txt",
+    workload: "container-output",
+    description: "Preserve service identity, connection endpoint, and final exit code.",
+    verification: { mustContain: ["api-1", "ECONNREFUSED 172.20.0.2:5432", "exited with code 1"] },
+  },
+  {
+    name: "eslint-fix-list",
+    fixture: "eslint-output.txt",
+    workload: "linter-output",
+    description: "Preserve source locations, rule names, and authoritative totals.",
+    verification: { mustContain: ["src/auth.ts", "@typescript-eslint/no-unused-vars", "@typescript-eslint/no-explicit-any", "2 problems"] },
+  },
+  {
     name: "pytest-passing-summary",
     fixture: "pytest-passing.txt",
     workload: "test-output",

@@ -1,5 +1,48 @@
 # Changelog
 
+## Unreleased
+
+## 0.4.0 - 2026-08-11
+
+- Add `optimizeContext()` with structured, command-aware, and generic routing.
+- Add lexical-lossless JSON and JSONL whitespace compaction without parse/reserialize loss.
+- Add command provenance profiles for test, build, log, version-control, and read tools.
+- Add apply/shadow audit evidence with content SHA-256 identities.
+- Add bounded, TTL-based, content-addressed original retrieval.
+- Add provider-neutral paired quality gates with aggregate and per-case thresholds.
+- Add adversarial, property, security, integration, and regression coverage for these APIs.
+- Validate the new context router on a fresh six-task DeepSeek V4 Flash campaign:
+  5.39% API-reported input-token reduction, non-inferiority PASS, and no reused v2 context.
+- Add hard token budgets, context ranking/compaction, vector retrieval, semantic
+  cache, model routing, OpenAI-compatible/DeepSeek adapters, cache-aware prompts,
+  and bounded metrics collection.
+- Validate the complete context engine on nine new easy-to-hard synthetic tasks:
+  54/54 DeepSeek V4 Flash runs complete, 100% original/optimized fact recall,
+  and 12.0% API-reported prompt-token reduction.
+- Bound context cardinality/text, semantic entries/dimensions, routes, telemetry,
+  and provider requests; add provider timeouts, abort propagation, protected auth
+  headers, and explicit SSRF trust-boundary documentation.
+- Add an isolated context-engine performance gate: 10,000 entries in 81.4 ms
+  median with 128.5 MiB peak RSS on the recorded runtime.
+- Document the package as one modular toolkit with separate responsibilities,
+  adoption paths, use cases, and metrics for solo developers and enterprises.
+- Replace the universal-looking benchmark hero with architecture, adoption, and
+  explicitly scoped benchmark-evidence visuals.
+
+- Add CI policy gates for minimum reduction, maximum output bytes, and required
+  content detection, with policy-failure exit codes and structured JSON v2.
+- Preserve the existing JSON v1 contract by default; schema v2 is explicit via
+  `--json-version 2`.
+- Add opt-in Markdown segment optimization for explicitly labelled terminal
+  output fences while preserving prose, source fences, and markers exactly.
+- Ship a reusable GitHub Action with job summaries, typed outputs, optimized
+  context artifacts, and policy enforcement.
+- Expand the committed real-case corpus with GitHub Actions, Terraform, Docker
+  Compose, and ESLint failures.
+- Validate package/lock/changelog versions and make trusted releases publish
+  npm provenance first, then create a matching GitHub Release with tarball,
+  CycloneDX SBOM, and SHA-256 checksum.
+
 ## 0.3.0 - 2026-08-11
 
 - Make security regressions and committed real-case validation explicit,

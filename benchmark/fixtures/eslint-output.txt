@@ -1,0 +1,5 @@
+[4m/workspace/src/auth.ts[0m
+  18:7  error  'token' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  27:10 error  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+✖ 2 problems (2 errors, 0 warnings)

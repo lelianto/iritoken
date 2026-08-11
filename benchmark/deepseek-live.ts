@@ -3,8 +3,8 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { optimize } from "../src/pipeline/optimize.js";
-import { LIVE_V2_CORPUS_ID, LIVE_V2_TASKS } from "./tasks/live-v2-manifest.js";
+import { optimizeContext } from "../src/pipeline/context.js";
+import { LIVE_V3_CORPUS_ID, LIVE_V3_TASKS } from "./tasks/live-v3-manifest.js";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
 const PROJECT_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -133,8 +133,8 @@ const maxCostUsd = Number(argument("--max-cost-usd") ?? "0.03");
 if (!Number.isFinite(maxCostUsd) || maxCostUsd <= 0 || maxCostUsd > 1) throw new Error("--max-cost-usd must be greater than 0 and at most 1");
 const taskFilter = argument("--task");
 const selectedTasks = taskFilter
-  ? LIVE_V2_TASKS.filter((task) => task.name === taskFilter)
-  : LIVE_V2_TASKS;
+  ? LIVE_V3_TASKS.filter((task) => task.name === taskFilter)
+  : LIVE_V3_TASKS;
 if (selectedTasks.length === 0) throw new Error(`Unknown --task: ${taskFilter}`);
 await validateModel(apiKey);
 
@@ -147,7 +147,7 @@ for (let trial = 1; trial <= trials; trial += 1) {
 const orderedJobs = seededOrder(jobs, 0xdee5_ee4 + trials);
 const resultsDir = join(ROOT, "results");
 const resultSuffix = taskFilter ? `-${taskFilter.replace(/[^a-z0-9-]/gi, "-")}` : "";
-const resultStem = `deepseek-live-v2${resultSuffix}`;
+const resultStem = `deepseek-live-v3${resultSuffix}`;
 mkdirSync(resultsDir, { recursive: true });
 const corpusSha256 = createHash("sha256");
 for (const task of selectedTasks) {
@@ -166,7 +166,7 @@ if (hasFlag("--resume")) {
     runs: Run[];
   };
   if (
-    partial.corpusId !== LIVE_V2_CORPUS_ID ||
+    partial.corpusId !== LIVE_V3_CORPUS_ID ||
     partial.corpusFingerprint !== corpusFingerprint ||
     partial.model !== MODEL ||
     partial.trials !== trials
@@ -180,7 +180,10 @@ if (hasFlag("--resume")) {
 for (const job of orderedJobs) {
   if (runs.some((run) => run.trial === job.trial && run.task === job.task.name && run.variant === job.variant)) continue;
   const original = readFileSync(join(ROOT, "fixtures", job.task.fixture), "utf8");
-  const context = job.variant === "original" ? original : optimize(original, { preset: "balanced" }).text;
+  const context = job.variant === "original" ? original : optimizeContext(original, {
+    preset: "balanced",
+    command: job.task.command,
+  }).text;
   const result = await completion(apiKey, job.task.description, context);
   const raw = result.choices[0]?.message.content ?? "";
   let answer = raw;
@@ -207,7 +210,7 @@ for (const job of orderedJobs) {
     0,
   );
   if (spendSoFar > maxCostUsd) throw new Error(`Cost cap exceeded: $${spendSoFar.toFixed(6)} > $${maxCostUsd.toFixed(6)}`);
-  writeFileSync(partialPath, JSON.stringify({ corpusId: LIVE_V2_CORPUS_ID, corpusFingerprint, model: MODEL, trials, runs }, null, 2), "utf8");
+  writeFileSync(partialPath, JSON.stringify({ corpusId: LIVE_V3_CORPUS_ID, corpusFingerprint, model: MODEL, trials, runs }, null, 2), "utf8");
   process.stdout.write(`${job.task.name} ${job.variant}: ${result.usage.prompt_tokens} input, ${factsFound}/${job.task.verification.mustContain.length} facts\n`);
 }
 if (runs.length !== orderedJobs.length) {
@@ -264,8 +267,8 @@ const pairedDifferenceCi95 = bootstrapInterval(
 );
 const nonInferiorityMargin = -0.05;
 const summary = {
-  schemaVersion: 2, methodologyVersion: "live-paired-fact-recall-v2",
-  corpusId: LIVE_V2_CORPUS_ID, corpusFingerprint,
+  schemaVersion: 3, methodologyVersion: "live-paired-fact-recall-v3-context-router",
+  corpusId: LIVE_V3_CORPUS_ID, corpusFingerprint,
   provider: "deepseek", model: MODEL, thinking: "disabled", preset: "balanced", trials, taskFilter: taskFilter ?? null,
   requests: runs.length, originalPromptTokens: originalInput, optimizedPromptTokens: optimizedInput,
   promptTokensRemoved: originalInput - optimizedInput,
@@ -285,9 +288,9 @@ const summary = {
   measuredAt: new Date().toISOString(), source: "DeepSeek API usage",
 };
 writeFileSync(join(resultsDir, `${resultStem}.json`), JSON.stringify({ summary, runs }, null, 2), "utf8");
-writeFileSync(join(resultsDir, `DEEPSEEK-V2${resultSuffix}.md`), [
+writeFileSync(join(resultsDir, `DEEPSEEK-V3${resultSuffix}.md`), [
   "# iritoken live DeepSeek benchmark", "", `- Model: \`${MODEL}\` (thinking disabled)`,
-  `- Corpus: \`${LIVE_V2_CORPUS_ID}\``, `- Corpus SHA-256: \`${corpusFingerprint}\``,
+  `- Corpus: \`${LIVE_V3_CORPUS_ID}\``, `- Corpus SHA-256: \`${corpusFingerprint}\``,
   `- Trials / requests: ${trials} / ${runs.length}`, `- Original input tokens: ${originalInput.toLocaleString("en-US")}`,
   `- Task filter: ${taskFilter ?? "all"}`,
   `- Optimized input tokens: ${optimizedInput.toLocaleString("en-US")}`,

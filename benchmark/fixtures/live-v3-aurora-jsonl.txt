@@ -1,0 +1,7 @@
+{ "time": "2026-08-11T08:21:01Z", "service": "svc-aurora-payments", "phase": "scan", "records": 128 }
+{ "time": "2026-08-11T08:21:02Z", "service": "svc-aurora-payments", "phase": "scan", "records": 128 }
+{ "time": "2026-08-11T08:21:03Z", "service": "svc-aurora-payments", "phase": "scan", "records": 128 }
+{ "time": "2026-08-11T08:21:04Z", "correlation": "corr_8VN4K2", "phase": "evaluate", "rules_checked": 46 }
+{ "time": "2026-08-11T08:21:05Z", "correlation": "corr_8VN4K2", "verdict": "deny-quarantine", "severity": "critical" }
+{ "time": "2026-08-11T08:21:06Z", "evidence_key": "evidence/2026/08/aurora-771.json", "stored": true }
+

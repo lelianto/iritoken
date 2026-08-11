@@ -1,0 +1,6 @@
+[32mapi-1  | Starting server on :3000[0m
+api-1  | Starting server on :3000
+api-1  | Starting server on :3000
+db-1   | database system is ready to accept connections
+api-1  | Error: connect ECONNREFUSED 172.20.0.2:5432
+api-1 exited with code 1

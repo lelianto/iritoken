@@ -1,0 +1,12 @@
+[09:17:20] rollout=PEL-9036 cluster=sea-edge-4 namespace=pelican
+[09:17:21] artifact=sha256:4df19a8c72e6 replicas=12
+[09:17:22] waiting for availability 3/12
+[09:17:23] waiting for availability 3/12
+[09:17:24] waiting for availability 3/12
+[09:17:25] waiting for availability 3/12
+[09:17:26] waiting for availability 5/12
+[09:17:27] waiting for availability 7/12
+[09:17:28] probe failure pod=pelican-api-7f4 route=/ready code=HC-917
+[09:17:29] rollback started trigger="health code HC-917" target=sha256:ab781f02c1d0
+[09:17:32] rollback complete rollout=PEL-9036 cluster=sea-edge-4
+
